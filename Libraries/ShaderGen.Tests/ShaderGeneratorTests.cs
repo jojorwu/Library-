@@ -9,6 +9,7 @@ public class ShaderGeneratorTests
     {
         public float Time { get; set; }
         public Vec2 Resolution { get; set; }
+        public Sampler2D MainTexture { get; set; }
     }
 
     [Test]
@@ -20,6 +21,7 @@ public class ShaderGeneratorTests
 #version 330 core
 uniform float time;
 uniform vec2 resolution;
+uniform sampler2D maintexture;
 out vec4 FragColor;
 void main()
 {
@@ -39,6 +41,7 @@ void main()
 #version 330 core
 uniform float time;
 uniform vec2 resolution;
+uniform sampler2D maintexture;
 out vec4 FragColor;
 void main()
 {
@@ -58,6 +61,7 @@ void main()
 #version 330 core
 uniform float time;
 uniform vec2 resolution;
+uniform sampler2D maintexture;
 out vec4 FragColor;
 void main()
 {
@@ -77,6 +81,7 @@ void main()
 #version 330 core
 uniform float time;
 uniform vec2 resolution;
+uniform sampler2D maintexture;
 out vec4 FragColor;
 void main()
 {
@@ -95,10 +100,49 @@ void main()
 #version 330 core
 uniform float time;
 uniform vec2 resolution;
+uniform sampler2D maintexture;
 out vec4 FragColor;
 void main()
 {
     FragColor = vec4(resolution.xy.y, 0.0, 0.0, 1.0);
+}
+".Trim();
+        Assert.That(shader.Trim(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Generate_WithTextureSampling_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate((MyUniforms u) => ShaderMath.Texture(u.MainTexture, u.Resolution.Xy));
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+uniform sampler2D maintexture;
+out vec4 FragColor;
+void main()
+{
+    FragColor = texture(maintexture, resolution.xy);
+}
+".Trim();
+        Assert.That(shader.Trim(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Generate_WithConditionalOperator_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate((MyUniforms u) => u.Time > 0.5f ? new Vec4(1.0f, 0.0f, 0.0f, 1.0f) : new Vec4(0.0f, 1.0f, 0.0f, 1.0f));
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+uniform sampler2D maintexture;
+out vec4 FragColor;
+void main()
+{
+    FragColor = ((time > 0.5)) ? (vec4(1.0, 0.0, 0.0, 1.0)) : (vec4(0.0, 1.0, 0.0, 1.0));
 }
 ".Trim();
         Assert.That(shader.Trim(), Is.EqualTo(expected));

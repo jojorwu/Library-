@@ -60,6 +60,12 @@ public class ShaderGenerator
                     ExpressionType.Subtract => "-",
                     ExpressionType.Multiply => "*",
                     ExpressionType.Divide => "/",
+                    ExpressionType.GreaterThan => ">",
+                    ExpressionType.LessThan => "<",
+                    ExpressionType.GreaterThanOrEqual => ">=",
+                    ExpressionType.LessThanOrEqual => "<=",
+                    ExpressionType.Equal => "==",
+                    ExpressionType.NotEqual => "!=",
                     _ => throw new NotSupportedException($"Binary operator '{binary.NodeType}' is not supported.")
                 };
                 return $"({left} {op} {right})";
@@ -135,6 +141,14 @@ public class ShaderGenerator
                     return $"({left} {op} {right})";
                 }
                 break;
+
+            case ConditionalExpression conditional:
+            {
+                var test = ParseExpression(conditional.Test);
+                var ifTrue = ParseExpression(conditional.IfTrue);
+                var ifFalse = ParseExpression(conditional.IfFalse);
+                return $"({test}) ? ({ifTrue}) : ({ifFalse})";
+            }
         }
 
         throw new NotSupportedException($"Expression type '{expression.NodeType}' is not supported.");

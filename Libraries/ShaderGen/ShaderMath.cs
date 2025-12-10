@@ -44,4 +44,6 @@ public static class ShaderMath
     public static Vec2 Clamp(Vec2 x, Vec2 minVal, Vec2 maxVal) => throw new NotImplementedException("This method is for shader generation only.");
     public static Vec3 Clamp(Vec3 x, Vec3 minVal, Vec3 maxVal) => throw new NotImplementedException("This method is for shader generation only.");
     public static Vec4 Clamp(Vec4 x, Vec4 minVal, Vec4 maxVal) => throw new NotImplementedException("This method is for shader generation only.");
+
+    public static Vec4 Texture(Sampler2D sampler, Vec2 uv) => throw new NotImplementedException("This method is for shader generation only.");
 }

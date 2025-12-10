@@ -10,6 +10,7 @@ public static class Glsl
         if (type == typeof(Vec2)) return "vec2";
         if (type == typeof(Vec3)) return "vec3";
         if (type == typeof(Vec4)) return "vec4";
+        if (type == typeof(Sampler2D)) return "sampler2D";
         throw new NotSupportedException($"The type '{type.Name}' is not supported as a uniform type.");
     }
 }
