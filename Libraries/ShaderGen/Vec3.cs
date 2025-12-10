@@ -15,4 +15,8 @@ public struct Vec3
     public static Vec3 operator -(Vec3 a, Vec3 b) => new(a.X - b.X, a.Y - b.Y, a.Z - b.Z);
     public static Vec3 operator *(Vec3 a, Vec3 b) => new(a.X * b.X, a.Y * b.Y, a.Z * b.Z);
     public static Vec3 operator /(Vec3 a, Vec3 b) => new(a.X / b.X, a.Y / b.Y, a.Z / b.Z);
+
+    public Vec2 Xy => new(X, Y);
+    public Vec3 Xyz => new(X, Y, Z);
+    public Vec3 Rgb => new(X, Y, Z);
 }

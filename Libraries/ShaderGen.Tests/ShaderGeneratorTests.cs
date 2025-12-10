@@ -66,4 +66,41 @@ void main()
 ".Trim();
         Assert.That(shader.Trim(), Is.EqualTo(expected));
     }
+
+    [Test]
+    public void Generate_WithMixFunction_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate((MyUniforms u) =>
+            new Vec4(ShaderMath.Mix(0.0f, 1.0f, u.Time), 0.0f, 0.0f, 1.0f));
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+out vec4 FragColor;
+void main()
+{
+    FragColor = vec4(mix(0.0, 1.0, time), 0.0, 0.0, 1.0);
+}
+".Trim();
+        Assert.That(shader.Trim(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Generate_WithSwizzling_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate((MyUniforms u) => new Vec4(u.Resolution.Xy.Y, 0.0f, 0.0f, 1.0f));
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+out vec4 FragColor;
+void main()
+{
+    FragColor = vec4(resolution.xy.y, 0.0, 0.0, 1.0);
+}
+".Trim();
+        Assert.That(shader.Trim(), Is.EqualTo(expected));
+    }
 }
