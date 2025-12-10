@@ -6,7 +6,7 @@ namespace Rtx._3D
     /// <summary>
     /// Represents a record of a ray hitting a 3D object.
     /// </summary>
-    public readonly record struct HitRecord3D(Vector3 Point, Vector3 Normal, float T);
+    public readonly record struct HitRecord3D(Vector3 Point, Vector3 Normal, IMaterial3D Material, float T);
 
     /// <summary>
     /// Defines a 3D object that can be intersected by a ray.

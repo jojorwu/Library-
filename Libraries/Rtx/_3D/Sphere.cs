@@ -10,11 +10,13 @@ namespace Rtx._3D
     {
         public Vector3 Center { get; }
         public float Radius { get; }
+        public IMaterial3D Material { get; }
 
-        public Sphere(Vector3 center, float radius)
+        public Sphere(Vector3 center, float radius, IMaterial3D material)
         {
             Center = center;
             Radius = radius;
+            Material = material;
         }
 
         public HitRecord3D? Hit(Ray3D ray, float tMin, float tMax)
@@ -45,7 +47,7 @@ namespace Rtx._3D
 
             Vector3 point = ray.At(root);
             Vector3 outwardNormal = (point - Center) / Radius;
-            return new HitRecord3D(point, outwardNormal, root);
+            return new HitRecord3D(point, outwardNormal, Material, root);
         }
     }
 }

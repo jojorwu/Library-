@@ -6,7 +6,7 @@ namespace Rtx._2D
     /// <summary>
     /// Represents a record of a ray hitting a 2D object.
     /// </summary>
-    public readonly record struct HitRecord2D(Vector2 Point, Vector2 Normal, float T);
+    public readonly record struct HitRecord2D(Vector2 Point, Vector2 Normal, IMaterial2D Material, float T);
 
     /// <summary>
     /// Defines a 2D object that can be intersected by a ray.

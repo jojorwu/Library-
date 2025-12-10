@@ -10,6 +10,7 @@ namespace Rtx._3D
     public class RayTracer3D
     {
         private readonly List<IHittable3D> _hittables = new();
+        public int MaxDepth { get; set; } = 50;
 
         /// <summary>
         /// Adds a hittable object to the scene.
@@ -20,9 +21,15 @@ namespace Rtx._3D
         /// Traces a ray through the scene and determines the color of the pixel.
         /// </summary>
         /// <param name="ray">The ray to trace.</param>
+        /// <param name="depth">The current recursion depth.</param>
         /// <returns>The color of the pixel.</returns>
-        public Vector3 Trace(Ray3D ray)
+        public Vector3 Trace(Ray3D ray, int depth)
         {
+            if (depth <= 0)
+            {
+                return Vector3.Zero;
+            }
+
             HitRecord3D? closestHit = null;
             float closestT = float.MaxValue;
 
@@ -38,8 +45,11 @@ namespace Rtx._3D
 
             if (closestHit.HasValue)
             {
-                // Simple visualization of the normal
-                return (closestHit.Value.Normal + Vector3.One) * 0.5f;
+                if (closestHit.Value.Material.Scatter(ray, closestHit.Value, out var attenuation, out var scattered))
+                {
+                    return attenuation * Trace(scattered, depth - 1);
+                }
+                return Vector3.Zero;
             }
 
             // Background color
