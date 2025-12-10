@@ -2,6 +2,8 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Text;
 
 namespace ShaderGen;
 
@@ -11,60 +13,25 @@ namespace ShaderGen;
 public class ShaderGenerator
 {
     /// <summary>
-    /// Generates a simple shader from a C# expression that returns a float.
-    /// </summary>
-    public string Generate(Expression<Func<float>> expression)
-    {
-        var glslExpression = ParseExpression(expression.Body);
-
-        return $@"
-#version 330 core
-out vec4 FragColor;
-
-void main()
-{{
-    float result = {glslExpression};
-    FragColor = vec4(result, result, result, 1.0);
-}}
-";
-    }
-
-    /// <summary>
     /// Generates a shader from a C# expression that returns a Vec4 color.
     /// </summary>
-    public string Generate(Expression<Func<Vec4>> expression)
+    public string Generate<TUniforms>(Expression<Func<TUniforms, Vec4>> expression)
     {
+        var uniforms = typeof(TUniforms).GetProperties()
+            .Select(p => $"uniform {Glsl.FromType(p.PropertyType)} {p.Name.ToLower()};")
+            .ToList();
+
         var glslExpression = ParseExpression(expression.Body);
 
-        return $@"
-#version 330 core
-out vec4 FragColor;
-
-void main()
-{{
-    FragColor = {glslExpression};
-}}
-";
-    }
-
-    /// <summary>
-    /// Generates a shader with a Vec2 uniform input and a Vec4 color output.
-    /// </summary>
-    public string Generate(Expression<Func<Vec2, Vec4>> expression)
-    {
-        var uniformName = expression.Parameters[0].Name;
-        var glslExpression = ParseExpression(expression.Body);
-
-        return $@"
-#version 330 core
-uniform vec2 {uniformName};
-out vec4 FragColor;
-
-void main()
-{{
-    FragColor = {glslExpression};
-}}
-";
+        var sb = new StringBuilder();
+        sb.AppendLine("#version 330 core");
+        sb.AppendLine(string.Join("\n", uniforms));
+        sb.AppendLine("out vec4 FragColor;");
+        sb.AppendLine("void main()");
+        sb.AppendLine("{");
+        sb.AppendLine($"    FragColor = {glslExpression};");
+        sb.AppendLine("}");
+        return sb.ToString();
     }
 
     private string ParseExpression(Expression expression)
@@ -120,6 +87,13 @@ void main()
                 return parameter.Name;
 
             case MemberExpression member:
+                // Uniform access: e.g., uniforms.Time
+                if (member.Expression is ParameterExpression)
+                {
+                    return member.Member.Name.ToLower();
+                }
+
+                // Vector member access: e.g., vec.X
                 if ((member.Member.DeclaringType == typeof(Vec2) ||
                      member.Member.DeclaringType == typeof(Vec3) ||
                      member.Member.DeclaringType == typeof(Vec4))
@@ -138,7 +112,7 @@ void main()
                 break;
 
             case MethodCallExpression call:
-                if (call.Method.DeclaringType == typeof(Math))
+                if (call.Method.DeclaringType == typeof(Math) || call.Method.DeclaringType == typeof(ShaderMath))
                 {
                     var args = call.Arguments.Select(ParseExpression);
                     var functionName = call.Method.Name.ToLower();
