@@ -11,6 +11,7 @@ namespace Rtx._3D
     {
         private readonly List<IHittable3D> _hittables = new();
         public int MaxDepth { get; set; } = 50;
+        public int SamplesPerPixel { get; set; } = 100;
 
         /// <summary>
         /// Adds a hittable object to the scene.
@@ -23,6 +24,29 @@ namespace Rtx._3D
         /// <param name="ray">The ray to trace.</param>
         /// <param name="depth">The current recursion depth.</param>
         /// <returns>The color of the pixel.</returns>
+        public Vector3[,] Render(int imageWidth, int imageHeight, Camera camera)
+        {
+            var image = new Vector3[imageWidth, imageHeight];
+
+            for (int j = imageHeight - 1; j >= 0; --j)
+            {
+                for (int i = 0; i < imageWidth; ++i)
+                {
+                    Vector3 pixelColor = Vector3.Zero;
+                    for (int s = 0; s < SamplesPerPixel; ++s)
+                    {
+                        var u = (i + (float)Random.Shared.NextDouble()) / (imageWidth - 1);
+                        var v = (j + (float)Random.Shared.NextDouble()) / (imageHeight - 1);
+                        var ray = camera.GetRay(u, v);
+                        pixelColor += Trace(ray, MaxDepth);
+                    }
+                    image[i, j] = pixelColor / SamplesPerPixel;
+                }
+            }
+
+            return image;
+        }
+
         public Vector3 Trace(Ray3D ray, int depth)
         {
             if (depth <= 0)

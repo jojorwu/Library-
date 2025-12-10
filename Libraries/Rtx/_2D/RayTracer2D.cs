@@ -11,11 +11,32 @@ namespace Rtx._2D
     {
         private readonly List<IHittable2D> _hittables = new();
         public int MaxDepth { get; set; } = 50;
+        public int SamplesPerPixel { get; set; } = 100;
 
         /// <summary>
         /// Adds a hittable object to the scene.
         /// </summary>
         public void Add(IHittable2D hittable) => _hittables.Add(hittable);
+
+        /// <summary>
+        /// Renders a 1D image of the 2D scene.
+        /// </summary>
+        public Vector3[] Render(int imageWidth, Camera2D camera)
+        {
+            var image = new Vector3[imageWidth];
+            for (int i = 0; i < imageWidth; ++i)
+            {
+                Vector3 pixelColor = Vector3.Zero;
+                for (int s = 0; s < SamplesPerPixel; ++s)
+                {
+                    var u = (i + (float)Random.Shared.NextDouble()) / (imageWidth - 1);
+                    var ray = camera.GetRay(u);
+                    pixelColor += Trace(ray, MaxDepth);
+                }
+                image[i] = pixelColor / SamplesPerPixel;
+            }
+            return image;
+        }
 
         /// <summary>
         /// Traces a ray through the scene and determines the color of the pixel.
