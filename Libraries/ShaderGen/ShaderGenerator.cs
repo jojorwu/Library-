@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Linq;
 using System.Linq.Expressions;
 
 namespace ShaderGen;
@@ -10,10 +11,8 @@ namespace ShaderGen;
 public class ShaderGenerator
 {
     /// <summary>
-    /// Generates shader code from a C# expression.
+    /// Generates a simple shader from a C# expression that returns a float.
     /// </summary>
-    /// <param name="expression">The C# expression representing the shader logic.</param>
-    /// <returns>The generated shader code.</returns>
     public string Generate(Expression<Func<float>> expression)
     {
         var glslExpression = ParseExpression(expression.Body);
@@ -30,40 +29,114 @@ void main()
 ";
     }
 
+    /// <summary>
+    /// Generates a shader from a C# expression that returns a Vec4 color.
+    /// </summary>
+    public string Generate(Expression<Func<Vec4>> expression)
+    {
+        var glslExpression = ParseExpression(expression.Body);
+
+        return $@"
+#version 330 core
+out vec4 FragColor;
+
+void main()
+{{
+    FragColor = {glslExpression};
+}}
+";
+    }
+
+    /// <summary>
+    /// Generates a shader with a Vec2 uniform input and a Vec4 color output.
+    /// </summary>
+    public string Generate(Expression<Func<Vec2, Vec4>> expression)
+    {
+        var uniformName = expression.Parameters[0].Name;
+        var glslExpression = ParseExpression(expression.Body);
+
+        return $@"
+#version 330 core
+uniform vec2 {uniformName};
+out vec4 FragColor;
+
+void main()
+{{
+    FragColor = {glslExpression};
+}}
+";
+    }
+
     private string ParseExpression(Expression expression)
     {
-        if (expression is ConstantExpression constant)
+        switch (expression)
         {
-            if (constant.Value is float f)
-            {
-                return f.ToString(CultureInfo.InvariantCulture);
-            }
-            return constant.Value?.ToString() ?? "null";
-        }
+            case ConstantExpression constant:
+                if (constant.Value is float f)
+                {
+                    var floatString = f.ToString(CultureInfo.InvariantCulture);
+                    if (!floatString.Contains('.') && !floatString.Contains('e', StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        return floatString + ".0";
+                    }
+                    return floatString;
+                }
+                return constant.Value?.ToString() ?? "null";
 
-        if (expression is BinaryExpression binary)
-        {
-            var left = ParseExpression(binary.Left);
-            var right = ParseExpression(binary.Right);
-            string op;
-            switch (binary.NodeType)
+            case BinaryExpression binary:
             {
-                case ExpressionType.Add:
-                    op = "+";
-                    break;
-                case ExpressionType.Subtract:
-                    op = "-";
-                    break;
-                case ExpressionType.Multiply:
-                    op = "*";
-                    break;
-                case ExpressionType.Divide:
-                    op = "/";
-                    break;
-                default:
-                     throw new NotSupportedException($"Binary operator '{binary.NodeType}' is not supported.");
+                var left = ParseExpression(binary.Left);
+                var right = ParseExpression(binary.Right);
+                var op = binary.NodeType switch
+                {
+                    ExpressionType.Add => "+",
+                    ExpressionType.Subtract => "-",
+                    ExpressionType.Multiply => "*",
+                    ExpressionType.Divide => "/",
+                    _ => throw new NotSupportedException($"Binary operator '{binary.NodeType}' is not supported.")
+                };
+                return $"({left} {op} {right})";
             }
-            return $"({left} {op} {right})";
+
+            case NewExpression newExp:
+                if (newExp.Constructor?.DeclaringType == typeof(Vec4))
+                {
+                    var args = newExp.Arguments.Select(ParseExpression);
+                    return $"vec4({string.Join(", ", args)})";
+                }
+                if (newExp.Constructor?.DeclaringType == typeof(Vec2))
+                {
+                    var args = newExp.Arguments.Select(ParseExpression);
+                    return $"vec2({string.Join(", ", args)})";
+                }
+                break;
+
+            case ParameterExpression parameter:
+                return parameter.Name;
+
+            case MemberExpression member:
+                if (member.Member.DeclaringType == typeof(Vec2) && member.Expression != null)
+                {
+                    var parent = ParseExpression(member.Expression);
+                    return $"{parent}.{member.Member.Name.ToLower()}";
+                }
+                break;
+
+            case UnaryExpression unary:
+                if (unary.NodeType == ExpressionType.Convert)
+                {
+                    return ParseExpression(unary.Operand);
+                }
+                break;
+
+            case MethodCallExpression call:
+                if (call.Method.DeclaringType == typeof(Math))
+                {
+                    var args = call.Arguments.Select(ParseExpression);
+                    var functionName = call.Method.Name.ToLower();
+                    return $"{functionName}({string.Join(", ", args)})";
+                }
+                break;
         }
 
         throw new NotSupportedException($"Expression type '{expression.NodeType}' is not supported.");
