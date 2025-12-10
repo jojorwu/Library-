@@ -104,6 +104,11 @@ void main()
                     var args = newExp.Arguments.Select(ParseExpression);
                     return $"vec4({string.Join(", ", args)})";
                 }
+                if (newExp.Constructor?.DeclaringType == typeof(Vec3))
+                {
+                    var args = newExp.Arguments.Select(ParseExpression);
+                    return $"vec3({string.Join(", ", args)})";
+                }
                 if (newExp.Constructor?.DeclaringType == typeof(Vec2))
                 {
                     var args = newExp.Arguments.Select(ParseExpression);
@@ -115,7 +120,10 @@ void main()
                 return parameter.Name;
 
             case MemberExpression member:
-                if (member.Member.DeclaringType == typeof(Vec2) && member.Expression != null)
+                if ((member.Member.DeclaringType == typeof(Vec2) ||
+                     member.Member.DeclaringType == typeof(Vec3) ||
+                     member.Member.DeclaringType == typeof(Vec4))
+                    && member.Expression != null)
                 {
                     var parent = ParseExpression(member.Expression);
                     return $"{parent}.{member.Member.Name.ToLower()}";
@@ -135,6 +143,22 @@ void main()
                     var args = call.Arguments.Select(ParseExpression);
                     var functionName = call.Method.Name.ToLower();
                     return $"{functionName}({string.Join(", ", args)})";
+                }
+
+                var declaringType = call.Method.DeclaringType;
+                if (declaringType == typeof(Vec2) || declaringType == typeof(Vec3) || declaringType == typeof(Vec4))
+                {
+                    var left = ParseExpression(call.Arguments[0]);
+                    var right = ParseExpression(call.Arguments[1]);
+                    var op = call.Method.Name switch
+                    {
+                        "op_Addition" => "+",
+                        "op_Subtraction" => "-",
+                        "op_Multiply" => "*",
+                        "op_Division" => "/",
+                        _ => throw new NotSupportedException($"Unsupported vector operation: {call.Method.Name}")
+                    };
+                    return $"({left} {op} {right})";
                 }
                 break;
         }

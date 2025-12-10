@@ -117,4 +117,38 @@ void main()
 ";
         Assert.That(shader.Trim(), Is.EqualTo(expected.Trim()));
     }
+
+    [Test]
+    public void Generate_WithVec3Expression_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate(() => new Vec4(new Vec3(0.1f, 0.2f, 0.3f).X, 0.0f, 0.0f, 1.0f));
+        var expected = @"
+#version 330 core
+out vec4 FragColor;
+
+void main()
+{
+    FragColor = vec4(vec3(0.1, 0.2, 0.3).x, 0.0, 0.0, 1.0);
+}
+";
+        Assert.That(shader.Trim(), Is.EqualTo(expected.Trim()));
+    }
+
+    [Test]
+    public void Generate_WithVectorAddition_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate(() => new Vec4((new Vec2(0.1f, 0.2f) + new Vec2(0.3f, 0.4f)).X, 0.0f, 0.0f, 1.0f));
+        var expected = @"
+#version 330 core
+out vec4 FragColor;
+
+void main()
+{
+    FragColor = vec4((vec2(0.1, 0.2) + vec2(0.3, 0.4)).x, 0.0, 0.0, 1.0);
+}
+";
+        Assert.That(shader.Trim(), Is.EqualTo(expected.Trim()));
+    }
 }
