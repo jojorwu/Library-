@@ -1,21 +1,57 @@
 namespace SoftShadows;
 
 /// <summary>
-/// A class for generating soft shadows.
+/// A class for generating soft shadows using Percentage-Closer Filtering (PCF).
 /// </summary>
 public class SoftShadowGenerator
 {
     /// <summary>
-    /// Generates a soft shadow based on the provided parameters.
+    /// Generates a soft shadow map using the PCF algorithm.
     /// </summary>
-    /// <param name="width">The width of the shadow map.</param>
-    /// <param name="height">The height of the shadow map.</param>
-    /// <returns>A byte array representing the soft shadow map.</returns>
-    public byte[] Generate(int width, int height)
+    /// <param name="surfaceDepthFromLight">A 2D array representing the depth of the scene from the light's perspective.</param>
+    /// <param name="shadowMap">A 2D array representing the shadow map (depth buffer from the light's point of view).</param>
+    /// <param name="filterSize">The size of the filter kernel to use for PCF (e.g., 3 for a 3x3 kernel).</param>
+    /// <param name="bias">A small offset to prevent self-shadowing artifacts (shadow acne).</param>
+    /// <returns>A 2D array representing the soft shadow map, with values ranging from 0.0 (in shadow) to 1.0 (fully lit).</returns>
+    public float[,] Generate(float[,] surfaceDepthFromLight, float[,] shadowMap, int filterSize, float bias)
     {
-        // This is a placeholder implementation.
-        // The actual implementation will involve techniques like Percentage-Closer Filtering (PCF)
-        // or Variance Shadow Maps (VSM) to create soft shadows.
-        return new byte[width * height];
+        int width = surfaceDepthFromLight.GetLength(0);
+        int height = surfaceDepthFromLight.GetLength(1);
+        var softShadowMap = new float[width, height];
+
+        int kernelRadius = filterSize / 2;
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float currentDepth = surfaceDepthFromLight[x, y];
+                float shadowFactor = 0.0f;
+                int samples = 0;
+
+                for (int j = -kernelRadius; j <= kernelRadius; j++)
+                {
+                    for (int i = -kernelRadius; i <= kernelRadius; i++)
+                    {
+                        int sampleX = x + i;
+                        int sampleY = y + j;
+
+                        if (sampleX >= 0 && sampleX < width && sampleY >= 0 && sampleY < height)
+                        {
+                            float occluderDepth = shadowMap[sampleX, sampleY];
+                            if (currentDepth > occluderDepth + bias)
+                            {
+                                shadowFactor += 1.0f;
+                            }
+                            samples++;
+                        }
+                    }
+                }
+
+                softShadowMap[x, y] = 1.0f - (shadowFactor / samples);
+            }
+        }
+
+        return softShadowMap;
     }
 }
