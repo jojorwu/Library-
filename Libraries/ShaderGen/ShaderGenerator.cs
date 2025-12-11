@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
+using System.Text;
 
 namespace ShaderGen;
 
@@ -10,64 +13,112 @@ namespace ShaderGen;
 /// </summary>
 public class ShaderGenerator
 {
-    /// <summary>
-    /// Generates a simple shader from a C# expression that returns a float.
-    /// </summary>
-    public string Generate(Expression<Func<float>> expression)
+    private class ParsingContext
     {
-        var glslExpression = ParseExpression(expression.Body);
-
-        return $@"
-#version 330 core
-out vec4 FragColor;
-
-void main()
-{{
-    float result = {glslExpression};
-    FragColor = vec4(result, result, result, 1.0);
-}}
-";
+        public HashSet<string> DeclaredVariables { get; } = new();
     }
 
     /// <summary>
     /// Generates a shader from a C# expression that returns a Vec4 color.
     /// </summary>
-    public string Generate(Expression<Func<Vec4>> expression)
+    public string Generate<TUniforms>(Expression<Func<TUniforms, Vec4>> expression)
     {
-        var glslExpression = ParseExpression(expression.Body);
+        var uniforms = typeof(TUniforms).GetProperties()
+            .Select(p => $"uniform {Glsl.FromType(p.PropertyType)} {p.Name.ToLower()};")
+            .ToList();
 
-        return $@"
-#version 330 core
-out vec4 FragColor;
+        var sb = new StringBuilder();
+        sb.AppendLine("#version 330 core");
+        sb.AppendLine(string.Join("\n", uniforms));
+        sb.AppendLine("out vec4 FragColor;");
+        sb.AppendLine("void main()");
+        sb.AppendLine("{");
 
-void main()
-{{
-    FragColor = {glslExpression};
-}}
-";
+        var context = new ParsingContext();
+        string resultExpression;
+
+        if (expression.Body is BlockExpression block)
+        {
+            var statements = block.Expressions.Take(block.Expressions.Count - 1);
+            foreach (var stmt in statements)
+            {
+                sb.AppendLine("    " + ParseStatement(stmt, context, block.Variables));
+            }
+
+            // The last expression in a block is the return value
+            if (block.Expressions.Last().NodeType != ExpressionType.Default)
+            {
+                resultExpression = ParseExpression(block.Expressions.Last(), context);
+            }
+            else
+            {
+                resultExpression = "vec4(0.0)";
+            }
+        }
+        else
+        {
+            resultExpression = ParseExpression(expression.Body, context);
+        }
+
+        sb.AppendLine($"    FragColor = {resultExpression};");
+        sb.AppendLine("}");
+        return sb.ToString();
     }
 
-    /// <summary>
-    /// Generates a shader with a Vec2 uniform input and a Vec4 color output.
-    /// </summary>
-    public string Generate(Expression<Func<Vec2, Vec4>> expression)
+    private string ParseStatement(Expression expression, ParsingContext context, IReadOnlyCollection<ParameterExpression> blockVariables)
     {
-        var uniformName = expression.Parameters[0].Name;
-        var glslExpression = ParseExpression(expression.Body);
+        if (expression is BinaryExpression binary && binary.NodeType == ExpressionType.Assign)
+        {
+            var variable = (ParameterExpression)binary.Left;
+            var variableName = variable.Name;
+            var value = ParseExpression(binary.Right, context);
 
-        return $@"
-#version 330 core
-uniform vec2 {uniformName};
-out vec4 FragColor;
+            if (blockVariables.Contains(variable) && variableName != null && !context.DeclaredVariables.Contains(variableName))
+            {
+                context.DeclaredVariables.Add(variableName);
+                var type = Glsl.FromType(variable.Type);
+                return $"{type} {variableName} = {value};";
+            }
+            return $"{variableName} = {value};";
+        }
 
-void main()
-{{
-    FragColor = {glslExpression};
-}}
-";
+        if (expression is ConditionalExpression conditional)
+        {
+            var test = ParseExpression(conditional.Test, context);
+            var ifTrue = ParseBlock(conditional.IfTrue, context);
+            var sb = new StringBuilder();
+            sb.Append($"if ({test}) {ifTrue}");
+
+            if (conditional.IfFalse != null && conditional.IfFalse.NodeType != ExpressionType.Default)
+            {
+                var ifFalse = ParseBlock(conditional.IfFalse, context);
+                sb.Append($" else {ifFalse}");
+            }
+
+            return sb.ToString();
+        }
+
+        return ParseExpression(expression, context) + ";";
     }
 
-    private string ParseExpression(Expression expression)
+    private string ParseBlock(Expression expression, ParsingContext context)
+    {
+        if (expression is BlockExpression block)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("{");
+            foreach (var stmt in block.Expressions.Where(s => s.NodeType != ExpressionType.Default))
+            {
+                sb.AppendLine("    " + ParseStatement(stmt, context, block.Variables));
+            }
+            sb.AppendLine("}");
+            return sb.ToString();
+        }
+
+        return "{ " + ParseStatement(expression, context, new List<ParameterExpression>()) + " }";
+    }
+
+    private string ParseExpression(Expression expression, ParsingContext context)
     {
         switch (expression)
         {
@@ -81,18 +132,30 @@ void main()
                     }
                     return floatString;
                 }
+
+                if (constant.Value is Vec3 v3)
+                {
+                    return $"vec3({v3.X.ToString(CultureInfo.InvariantCulture)}, {v3.Y.ToString(CultureInfo.InvariantCulture)}, {v3.Z.ToString(CultureInfo.InvariantCulture)})";
+                }
+
                 return constant.Value?.ToString() ?? "null";
 
             case BinaryExpression binary:
             {
-                var left = ParseExpression(binary.Left);
-                var right = ParseExpression(binary.Right);
+                var left = ParseExpression(binary.Left, context);
+                var right = ParseExpression(binary.Right, context);
                 var op = binary.NodeType switch
                 {
                     ExpressionType.Add => "+",
                     ExpressionType.Subtract => "-",
                     ExpressionType.Multiply => "*",
                     ExpressionType.Divide => "/",
+                    ExpressionType.GreaterThan => ">",
+                    ExpressionType.LessThan => "<",
+                    ExpressionType.GreaterThanOrEqual => ">=",
+                    ExpressionType.LessThanOrEqual => "<=",
+                    ExpressionType.Equal => "==",
+                    ExpressionType.NotEqual => "!=",
                     _ => throw new NotSupportedException($"Binary operator '{binary.NodeType}' is not supported.")
                 };
                 return $"({left} {op} {right})";
@@ -101,17 +164,17 @@ void main()
             case NewExpression newExp:
                 if (newExp.Constructor?.DeclaringType == typeof(Vec4))
                 {
-                    var args = newExp.Arguments.Select(ParseExpression);
+                    var args = newExp.Arguments.Select(a => ParseExpression(a, context));
                     return $"vec4({string.Join(", ", args)})";
                 }
                 if (newExp.Constructor?.DeclaringType == typeof(Vec3))
                 {
-                    var args = newExp.Arguments.Select(ParseExpression);
+                    var args = newExp.Arguments.Select(a => ParseExpression(a, context));
                     return $"vec3({string.Join(", ", args)})";
                 }
                 if (newExp.Constructor?.DeclaringType == typeof(Vec2))
                 {
-                    var args = newExp.Arguments.Select(ParseExpression);
+                    var args = newExp.Arguments.Select(a => ParseExpression(a, context));
                     return $"vec2({string.Join(", ", args)})";
                 }
                 break;
@@ -120,12 +183,16 @@ void main()
                 return parameter.Name;
 
             case MemberExpression member:
-                if ((member.Member.DeclaringType == typeof(Vec2) ||
-                     member.Member.DeclaringType == typeof(Vec3) ||
-                     member.Member.DeclaringType == typeof(Vec4))
-                    && member.Expression != null)
+                // Uniform access: e.g., uniforms.Time
+                if (member.Expression is ParameterExpression param && param.Name != null && !context.DeclaredVariables.Contains(param.Name))
                 {
-                    var parent = ParseExpression(member.Expression);
+                    return member.Member.Name.ToLower();
+                }
+
+                // Vector member access or local variable field access
+                if (member.Expression != null)
+                {
+                    var parent = ParseExpression(member.Expression, context);
                     return $"{parent}.{member.Member.Name.ToLower()}";
                 }
                 break;
@@ -133,14 +200,14 @@ void main()
             case UnaryExpression unary:
                 if (unary.NodeType == ExpressionType.Convert)
                 {
-                    return ParseExpression(unary.Operand);
+                    return ParseExpression(unary.Operand, context);
                 }
                 break;
 
             case MethodCallExpression call:
-                if (call.Method.DeclaringType == typeof(Math))
+                if (call.Method.DeclaringType == typeof(Math) || call.Method.DeclaringType == typeof(ShaderMath))
                 {
-                    var args = call.Arguments.Select(ParseExpression);
+                    var args = call.Arguments.Select(a => ParseExpression(a, context));
                     var functionName = call.Method.Name.ToLower();
                     return $"{functionName}({string.Join(", ", args)})";
                 }
@@ -148,8 +215,8 @@ void main()
                 var declaringType = call.Method.DeclaringType;
                 if (declaringType == typeof(Vec2) || declaringType == typeof(Vec3) || declaringType == typeof(Vec4))
                 {
-                    var left = ParseExpression(call.Arguments[0]);
-                    var right = ParseExpression(call.Arguments[1]);
+                    var left = ParseExpression(call.Arguments[0], context);
+                    var right = ParseExpression(call.Arguments[1], context);
                     var op = call.Method.Name switch
                     {
                         "op_Addition" => "+",
@@ -161,6 +228,14 @@ void main()
                     return $"({left} {op} {right})";
                 }
                 break;
+
+            case ConditionalExpression conditional:
+            {
+                var test = ParseExpression(conditional.Test, context);
+                var ifTrue = ParseExpression(conditional.IfTrue, context);
+                var ifFalse = ParseExpression(conditional.IfFalse, context);
+                return $"({test}) ? ({ifTrue}) : ({ifFalse})";
+            }
         }
 
         throw new NotSupportedException($"Expression type '{expression.NodeType}' is not supported.");
