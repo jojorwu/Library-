@@ -67,6 +67,11 @@ public class ShaderGenerator
 
     private string ParseStatement(Expression expression, ParsingContext context, IReadOnlyCollection<ParameterExpression> blockVariables)
     {
+        if (expression is UnaryExpression ue && ue.NodeType == ExpressionType.Convert)
+        {
+            expression = ue.Operand;
+        }
+
         if (expression is BinaryExpression binary && binary.NodeType == ExpressionType.Assign)
         {
             var variable = (ParameterExpression)binary.Left;
@@ -96,6 +101,16 @@ public class ShaderGenerator
             }
 
             return sb.ToString();
+        }
+
+        if (expression is MethodCallExpression call && call.Method.DeclaringType == typeof(ShaderMath) && call.Method.Name == "For")
+        {
+            var initializer = ParseStatement(((LambdaExpression)call.Arguments[0]).Body, context, blockVariables);
+            var condition = ParseExpression(((LambdaExpression)call.Arguments[1]).Body, context);
+            var iterator = ParseStatement(((LambdaExpression)call.Arguments[2]).Body, context, blockVariables);
+            var body = ParseBlock(((LambdaExpression)call.Arguments[3]).Body, context);
+
+            return $"for ({initializer.TrimEnd(';')}; {condition}; {iterator.TrimEnd(';')}) {body}";
         }
 
         return ParseExpression(expression, context) + ";";
@@ -201,6 +216,11 @@ public class ShaderGenerator
                 if (unary.NodeType == ExpressionType.Convert)
                 {
                     return ParseExpression(unary.Operand, context);
+                }
+                if (unary.NodeType == ExpressionType.PostIncrementAssign)
+                {
+                    var operand = ParseExpression(unary.Operand, context);
+                    return $"{operand}++";
                 }
                 break;
 

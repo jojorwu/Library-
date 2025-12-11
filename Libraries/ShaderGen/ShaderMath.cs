@@ -76,4 +76,6 @@ public static class ShaderMath
     public static Vec2 Max(Vec2 a, Vec2 b) => throw new NotImplementedException("This method is for shader generation only.");
     public static Vec3 Max(Vec3 a, Vec3 b) => throw new NotImplementedException("This method is for shader generation only.");
     public static Vec4 Max(Vec4 a, Vec4 b) => throw new NotImplementedException("This method is for shader generation only.");
+
+    public static void For(Func<object> initializer, Func<bool> condition, Func<object> iterator, Action body) => throw new NotImplementedException("This method is for shader generation only.");
 }
