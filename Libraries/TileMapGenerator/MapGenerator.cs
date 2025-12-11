@@ -4,8 +4,22 @@ using System.Linq;
 
 namespace TileMapGenerator;
 
+/// <summary>
+/// Generates a procedural tile map using Perlin noise.
+/// </summary>
 public class MapGenerator
 {
+    /// <summary>
+    /// Generates a tile map.
+    /// </summary>
+    /// <param name="width">The width of the map.</param>
+    /// <param name="height">The height of the map.</param>
+    /// <param name="scale">The scale of the Perlin noise. Higher values result in more zoomed-in terrain.</param>
+    /// <param name="seed">The seed for the random number generator, ensuring deterministic output.</param>
+    /// <param name="mappings">A list of noise thresholds mapped to tile definitions.</param>
+    /// <param name="randomStructures">A list of structures to be placed at random locations.</param>
+    /// <param name="placedStructures">A list of structures to be placed at specific locations.</param>
+    /// <returns>A 2D integer array representing the generated tile map.</returns>
     public int[,] Generate(
         int width, int height, float scale, int seed,
         List<NoiseMapping> mappings,

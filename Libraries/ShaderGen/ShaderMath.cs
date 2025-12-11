@@ -4,103 +4,332 @@ namespace ShaderGen;
 
 /// <summary>
 /// Provides C# equivalents for GLSL's built-in functions.
-/// The ShaderGenerator will translate calls to these methods to their native GLSL counterparts.
+/// Calls to these methods are not executed directly, but are translated into native GLSL code by the `ShaderGenerator`.
 /// </summary>
 public static class ShaderMath
 {
+    /// <summary>
+    /// Calculates the dot product of two vectors.
+    /// </summary>
     public static float Dot(Vec2 a, Vec2 b) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Calculates the dot product of two vectors.
+    /// </summary>
     public static float Dot(Vec3 a, Vec3 b) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Calculates the dot product of two vectors.
+    /// </summary>
     public static float Dot(Vec4 a, Vec4 b) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Computes the fractional part of the input.
+    /// </summary>
     public static float Fract(float a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the fractional part of the input vector's components.
+    /// </summary>
     public static Vec2 Fract(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the fractional part of the input vector's components.
+    /// </summary>
     public static Vec3 Fract(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the fractional part of the input vector's components.
+    /// </summary>
     public static Vec4 Fract(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Performs a linear interpolation between two values.
+    /// </summary>
     public static float Mix(float a, float b, float t) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Performs a component-wise linear interpolation between two vectors.
+    /// </summary>
     public static Vec2 Mix(Vec2 a, Vec2 b, float t) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Performs a component-wise linear interpolation between two vectors.
+    /// </summary>
     public static Vec3 Mix(Vec3 a, Vec3 b, float t) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Performs a component-wise linear interpolation between two vectors.
+    /// </summary>
     public static Vec4 Mix(Vec4 a, Vec4 b, float t) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Normalizes a vector.
+    /// </summary>
     public static Vec2 Normalize(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Normalizes a vector.
+    /// </summary>
     public static Vec3 Normalize(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Normalizes a vector.
+    /// </summary>
     public static Vec4 Normalize(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Calculates the length of a vector.
+    /// </summary>
     public static float Length(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Calculates the length of a vector.
+    /// </summary>
     public static float Length(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Calculates the length of a vector.
+    /// </summary>
     public static float Length(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Generates a step function by comparing two values.
+    /// </summary>
     public static float Step(float edge, float x) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Generates a step function by comparing two vectors component-wise.
+    /// </summary>
     public static Vec2 Step(Vec2 edge, Vec2 x) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Generates a step function by comparing two vectors component-wise.
+    /// </summary>
     public static Vec3 Step(Vec3 edge, Vec3 x) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Generates a step function by comparing two vectors component-wise.
+    /// </summary>
     public static Vec4 Step(Vec4 edge, Vec4 x) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Performs a smooth Hermite interpolation between 0 and 1 when edge0 < x < edge1.
+    /// </summary>
     public static float Smoothstep(float edge0, float edge1, float x) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Performs a smooth Hermite interpolation between 0 and 1 when edge0 < x < edge1 component-wise.
+    /// </summary>
     public static Vec2 Smoothstep(Vec2 edge0, Vec2 edge1, Vec2 x) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Performs a smooth Hermite interpolation between 0 and 1 when edge0 < x < edge1 component-wise.
+    /// </summary>
     public static Vec3 Smoothstep(Vec3 edge0, Vec3 edge1, Vec3 x) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Performs a smooth Hermite interpolation between 0 and 1 when edge0 < x < edge1 component-wise.
+    /// </summary>
     public static Vec4 Smoothstep(Vec4 edge0, Vec4 edge1, Vec4 x) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Constrains a value to lie between a minimum and maximum value.
+    /// </summary>
     public static float Clamp(float x, float minVal, float maxVal) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Constrains a vector to lie between a minimum and maximum value component-wise.
+    /// </summary>
     public static Vec2 Clamp(Vec2 x, Vec2 minVal, Vec2 maxVal) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Constrains a vector to lie between a minimum and maximum value component-wise.
+    /// </summary>
     public static Vec3 Clamp(Vec3 x, Vec3 minVal, Vec3 maxVal) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Constrains a vector to lie between a minimum and maximum value component-wise.
+    /// </summary>
     public static Vec4 Clamp(Vec4 x, Vec4 minVal, Vec4 maxVal) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Performs a texture lookup.
+    /// </summary>
     public static Vec4 Texture(Sampler2D sampler, Vec2 uv) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Computes the cosine of the input.
+    /// </summary>
     public static float Cos(float a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the cosine of the input vector's components.
+    /// </summary>
     public static Vec2 Cos(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the cosine of the input vector's components.
+    /// </summary>
     public static Vec3 Cos(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the cosine of the input vector's components.
+    /// </summary>
     public static Vec4 Cos(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Calculates the value of a number raised to a power.
+    /// </summary>
     public static float Pow(float a, float b) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Calculates the value of a vector's components raised to a power component-wise.
+    /// </summary>
     public static Vec2 Pow(Vec2 a, Vec2 b) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Calculates the value of a vector's components raised to a power component-wise.
+    /// </summary>
     public static Vec3 Pow(Vec3 a, Vec3 b) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Calculates the value of a vector's components raised to a power component-wise.
+    /// </summary>
     public static Vec4 Pow(Vec4 a, Vec4 b) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Calculates the square root of the input.
+    /// </summary>
     public static float Sqrt(float a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Calculates the square root of the input vector's components.
+    /// </summary>
     public static Vec2 Sqrt(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Calculates the square root of the input vector's components.
+    /// </summary>
     public static Vec3 Sqrt(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Calculates the square root of the input vector's components.
+    /// </summary>
     public static Vec4 Sqrt(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Calculates the absolute value of the input.
+    /// </summary>
     public static float Abs(float a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Calculates the absolute value of the input vector's components.
+    /// </summary>
     public static Vec2 Abs(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Calculates the absolute value of the input vector's components.
+    /// </summary>
     public static Vec3 Abs(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Calculates the absolute value of the input vector's components.
+    /// </summary>
     public static Vec4 Abs(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Returns the lesser of two values.
+    /// </summary>
     public static float Min(float a, float b) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Returns the lesser of two vectors component-wise.
+    /// </summary>
     public static Vec2 Min(Vec2 a, Vec2 b) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Returns the lesser of two vectors component-wise.
+    /// </summary>
     public static Vec3 Min(Vec3 a, Vec3 b) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Returns the lesser of two vectors component-wise.
+    /// </summary>
     public static Vec4 Min(Vec4 a, Vec4 b) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Returns the greater of two values.
+    /// </summary>
     public static float Max(float a, float b) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Returns the greater of two vectors component-wise.
+    /// </summary>
     public static Vec2 Max(Vec2 a, Vec2 b) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Returns the greater of two vectors component-wise.
+    /// </summary>
     public static Vec3 Max(Vec3 a, Vec3 b) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Returns the greater of two vectors component-wise.
+    /// </summary>
     public static Vec4 Max(Vec4 a, Vec4 b) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Computes the sine of the input.
+    /// </summary>
     public static float Sin(float a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the sine of the input vector's components.
+    /// </summary>
     public static Vec2 Sin(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the sine of the input vector's components.
+    /// </summary>
     public static Vec3 Sin(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the sine of the input vector's components.
+    /// </summary>
     public static Vec4 Sin(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Computes the tangent of the input.
+    /// </summary>
     public static float Tan(float a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the tangent of the input vector's components.
+    /// </summary>
     public static Vec2 Tan(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the tangent of the input vector's components.
+    /// </summary>
     public static Vec3 Tan(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the tangent of the input vector's components.
+    /// </summary>
     public static Vec4 Tan(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Finds the nearest integer less than or equal to the input.
+    /// </summary>
     public static float Floor(float a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Finds the nearest integer less than or equal to the input vector's components.
+    /// </summary>
     public static Vec2 Floor(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Finds the nearest integer less than or equal to the input vector's components.
+    /// </summary>
     public static Vec3 Floor(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Finds the nearest integer less than or equal to the input vector's components.
+    /// </summary>
     public static Vec4 Floor(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Finds the nearest integer that is greater than or equal to the input.
+    /// </summary>
     public static float Ceil(float a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Finds the nearest integer that is greater than or equal to the input vector's components.
+    /// </summary>
     public static Vec2 Ceil(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Finds the nearest integer that is greater than or equal to the input vector's components.
+    /// </summary>
     public static Vec3 Ceil(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Finds the nearest integer that is greater than or equal to the input vector's components.
+    /// </summary>
     public static Vec4 Ceil(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Computes the modulus of the input.
+    /// </summary>
     public static float Mod(float x, float y) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the modulus of the input vector's components.
+    /// </summary>
     public static Vec2 Mod(Vec2 x, Vec2 y) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the modulus of the input vector's components.
+    /// </summary>
     public static Vec3 Mod(Vec3 x, Vec3 y) => throw new NotImplementedException("This method is for shader generation only.");
+    /// <summary>
+    /// Computes the modulus of the input vector's components.
+    /// </summary>
     public static Vec4 Mod(Vec4 x, Vec4 y) => throw new NotImplementedException("This method is for shader generation only.");
 
+    /// <summary>
+    /// Represents a GLSL `for` loop.
+    /// </summary>
+    /// <param name="initializer">The loop initializer.</param>
+    /// <param name="condition">The loop condition.</param>
+    /// <param name="iterator">The loop iterator.</param>
+    /// <param name="body">The loop body.</param>
     public static void For(Func<object> initializer, Func<bool> condition, Func<object> iterator, Action body) => throw new NotImplementedException("This method is for shader generation only.");
 }

@@ -418,7 +418,7 @@ void main()
     public void Generate_WithCosFunction_ReturnsCorrectShader()
     {
         var generator = new ShaderGenerator();
-        var shader = generator.Generate((MyUniforms u) => new Vec4((float)Math.Cos(u.Time), 0.0f, 0.0f, 1.0f));
+        var shader = generator.Generate((MyUniforms u) => new Vec4(ShaderMath.Cos(u.Time), 0.0f, 0.0f, 1.0f));
         var expected = @"
 #version 330 core
 uniform float time;

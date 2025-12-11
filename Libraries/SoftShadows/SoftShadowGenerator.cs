@@ -10,11 +10,12 @@ public class SoftShadowGenerator
     /// <summary>
     /// Generates a soft shadow map using the PCF algorithm.
     /// </summary>
-    /// <param name="surfaceDepthFromLight">A 2D array representing the depth of the scene from the light's perspective.</param>
-    /// <param name="shadowMap">A 2D array representing the shadow map (depth buffer from the light's point of view).</param>
-    /// <param name="filterSize">The size of the filter kernel to use for PCF (e.g., 3 for a 3x3 kernel).</param>
-    /// <param name="bias">A small offset to prevent self-shadowing artifacts (shadow acne).</param>
+    /// <param name="surfaceDepthFromLight">A 2D array representing the depth of each pixel from the light's perspective.</param>
+    /// <param name="shadowMap">A 2D array representing the shadow map, which is the depth buffer rendered from the light's point of view.</param>
+    /// <param name="filterSize">The size of the filter kernel to use for PCF (e.g., 3 for a 3x3 kernel). Must be a positive, odd number.</param>
+    /// <param name="bias">A small depth offset to prevent self-shadowing artifacts (shadow acne).</param>
     /// <returns>A 2D array representing the soft shadow map, with values ranging from 0.0 (in shadow) to 1.0 (fully lit).</returns>
+    /// <exception cref="System.ArgumentException">Thrown when input maps have mismatched dimensions or filter size is invalid.</exception>
     public float[,] Generate(float[,] surfaceDepthFromLight, float[,] shadowMap, int filterSize, float bias)
     {
         if (surfaceDepthFromLight.GetLength(0) != shadowMap.GetLength(0) ||

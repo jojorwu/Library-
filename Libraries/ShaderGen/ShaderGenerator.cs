@@ -11,6 +11,9 @@ namespace ShaderGen;
 /// <summary>
 /// A class for generating shader code from C# expressions.
 /// </summary>
+/// <summary>
+/// Generates GLSL fragment shader code from C# expression trees.
+/// </summary>
 public class ShaderGenerator
 {
     private class ParsingContext
@@ -19,8 +22,11 @@ public class ShaderGenerator
     }
 
     /// <summary>
-    /// Generates a shader from a C# expression that returns a Vec4 color.
+    /// Generates a GLSL fragment shader from a C# expression.
     /// </summary>
+    /// <param name="expression">A C# lambda expression that takes a uniforms object and returns a `Vec4` color.</param>
+    /// <typeparam name="TUniforms">A class whose public properties will be converted into GLSL uniforms.</typeparam>
+    /// <returns>A string containing the complete GLSL fragment shader code.</returns>
     public string Generate<TUniforms>(Expression<Func<TUniforms, Vec4>> expression)
     {
         var uniforms = typeof(TUniforms).GetProperties()

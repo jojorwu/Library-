@@ -2,11 +2,18 @@ using System;
 
 namespace TileMapGenerator;
 
+/// <summary>
+/// A static class for generating Perlin noise.
+/// </summary>
 public static class PerlinNoise
 {
     private static readonly int[] _p = new int[512];
     private static bool _initialized = false;
 
+    /// <summary>
+    /// Initializes the Perlin noise generator with a specific seed.
+    /// </summary>
+    /// <param name="seed">The seed to use for the noise generation.</param>
     public static void Initialize(int seed)
     {
         var permutation = new int[256];
@@ -30,6 +37,12 @@ public static class PerlinNoise
         _initialized = true;
     }
 
+    /// <summary>
+    /// Generates a Perlin noise value for the given coordinates.
+    /// </summary>
+    /// <param name="x">The x-coordinate.</param>
+    /// <param name="y">The y-coordinate.</param>
+    /// <returns>A float between 0.0 and 1.0.</returns>
     public static float Generate(float x, float y)
     {
         if (!_initialized)
