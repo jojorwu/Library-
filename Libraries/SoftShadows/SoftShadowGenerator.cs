@@ -17,6 +17,22 @@ public class SoftShadowGenerator
     /// <returns>A 2D array representing the soft shadow map, with values ranging from 0.0 (in shadow) to 1.0 (fully lit).</returns>
     public float[,] Generate(float[,] surfaceDepthFromLight, float[,] shadowMap, int filterSize, float bias)
     {
+        if (surfaceDepthFromLight.GetLength(0) != shadowMap.GetLength(0) ||
+            surfaceDepthFromLight.GetLength(1) != shadowMap.GetLength(1))
+        {
+            throw new System.ArgumentException("Input maps must have the same dimensions.");
+        }
+
+        if (filterSize <= 0)
+        {
+            throw new System.ArgumentException("Filter size must be a positive number.", nameof(filterSize));
+        }
+
+        if (filterSize % 2 == 0)
+        {
+            throw new System.ArgumentException("Filter size must be an odd number.", nameof(filterSize));
+        }
+
         int width = surfaceDepthFromLight.GetLength(0);
         int height = surfaceDepthFromLight.GetLength(1);
         var softShadowMap = new float[width, height];

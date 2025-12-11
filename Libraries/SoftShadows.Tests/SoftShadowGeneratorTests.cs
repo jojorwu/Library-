@@ -106,5 +106,33 @@ namespace SoftShadows.Tests
             Assert.That(softShadowMap[1, 0], Is.EqualTo(0.0f).Within(0.001f));
             Assert.That(softShadowMap[1, 1], Is.EqualTo(0.0f).Within(0.001f));
         }
+
+        [Test]
+        public void Generate_WithMismatchedDimensions_ThrowsArgumentException()
+        {
+            var generator = new SoftShadowGenerator();
+            var surfaceDepthFromLight = new float[2, 2];
+            var shadowMap = new float[3, 3];
+            Assert.Throws<System.ArgumentException>(() => generator.Generate(surfaceDepthFromLight, shadowMap, 3, 0.01f));
+        }
+
+        [Test]
+        public void Generate_WithNonPositiveFilterSize_ThrowsArgumentException()
+        {
+            var generator = new SoftShadowGenerator();
+            var surfaceDepthFromLight = new float[2, 2];
+            var shadowMap = new float[2, 2];
+            Assert.Throws<System.ArgumentException>(() => generator.Generate(surfaceDepthFromLight, shadowMap, 0, 0.01f));
+            Assert.Throws<System.ArgumentException>(() => generator.Generate(surfaceDepthFromLight, shadowMap, -1, 0.01f));
+        }
+
+        [Test]
+        public void Generate_WithEvenFilterSize_ThrowsArgumentException()
+        {
+            var generator = new SoftShadowGenerator();
+            var surfaceDepthFromLight = new float[2, 2];
+            var shadowMap = new float[2, 2];
+            Assert.Throws<System.ArgumentException>(() => generator.Generate(surfaceDepthFromLight, shadowMap, 2, 0.01f));
+        }
     }
 }
