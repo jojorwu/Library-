@@ -17,6 +17,8 @@ public struct Vec4
     public static Vec4 operator *(Vec4 a, Vec4 b) => new(a.X * b.X, a.Y * b.Y, a.Z * b.Z, a.W * b.W);
     public static Vec4 operator /(Vec4 a, Vec4 b) => new(a.X / b.X, a.Y / b.Y, a.Z / b.Z, a.W / b.W);
 
+    public static Vec4 operator /(Vec4 a, float b) => new(a.X / b, a.Y / b, a.Z / b, a.W / b);
+
     public Vec2 Xy => new(X, Y);
     public Vec3 Xyz => new(X, Y, Z);
     public Vec3 Rgb => new(X, Y, Z);

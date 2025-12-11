@@ -15,6 +15,8 @@ public struct Vec2
     public static Vec2 operator *(Vec2 a, Vec2 b) => new(a.X * b.X, a.Y * b.Y);
     public static Vec2 operator /(Vec2 a, Vec2 b) => new(a.X / b.X, a.Y / b.Y);
 
+    public static Vec2 operator /(Vec2 a, float b) => new(a.X / b, a.Y / b);
+
     public Vec2 Xy => new(X, Y);
     public Vec2 Yx => new(Y, X);
 }

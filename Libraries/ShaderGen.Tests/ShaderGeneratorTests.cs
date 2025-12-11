@@ -1,5 +1,6 @@
 using NUnit.Framework;
 using ShaderGen;
+using System.Linq.Expressions;
 
 namespace ShaderGen.Tests;
 
@@ -143,6 +144,43 @@ out vec4 FragColor;
 void main()
 {
     FragColor = ((time > 0.5)) ? (vec4(1.0, 0.0, 0.0, 1.0)) : (vec4(0.0, 1.0, 0.0, 1.0));
+}
+".Trim();
+        Assert.That(shader.Trim(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Generate_WithLocalVariables_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+
+        var u = Expression.Parameter(typeof(MyUniforms), "u");
+        var uv = Expression.Variable(typeof(Vec2), "uv");
+        var assign = Expression.Assign(uv,
+            Expression.Divide(
+                Expression.Property(u, "Resolution"),
+                Expression.Property(u, "Time")));
+
+        var returnVal = Expression.New(typeof(Vec4).GetConstructor(new[] { typeof(float), typeof(float), typeof(float), typeof(float) }),
+            Expression.Field(uv, "X"),
+            Expression.Field(uv, "Y"),
+            Expression.Constant(0.0f),
+            Expression.Constant(1.0f));
+
+        var block = Expression.Block(new[] { uv }, assign, returnVal);
+        var lambda = Expression.Lambda<System.Func<MyUniforms, Vec4>>(block, u);
+
+        var shader = generator.Generate(lambda);
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+uniform sampler2D maintexture;
+out vec4 FragColor;
+void main()
+{
+    vec2 uv = (resolution / time);
+    FragColor = vec4(uv.x, uv.y, 0.0, 1.0);
 }
 ".Trim();
         Assert.That(shader.Trim(), Is.EqualTo(expected));

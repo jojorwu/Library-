@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
@@ -12,6 +13,11 @@ namespace ShaderGen;
 /// </summary>
 public class ShaderGenerator
 {
+    private class ParsingContext
+    {
+        public HashSet<string> DeclaredVariables { get; } = new();
+    }
+
     /// <summary>
     /// Generates a shader from a C# expression that returns a Vec4 color.
     /// </summary>
@@ -21,20 +27,60 @@ public class ShaderGenerator
             .Select(p => $"uniform {Glsl.FromType(p.PropertyType)} {p.Name.ToLower()};")
             .ToList();
 
-        var glslExpression = ParseExpression(expression.Body);
-
         var sb = new StringBuilder();
         sb.AppendLine("#version 330 core");
         sb.AppendLine(string.Join("\n", uniforms));
         sb.AppendLine("out vec4 FragColor;");
         sb.AppendLine("void main()");
         sb.AppendLine("{");
-        sb.AppendLine($"    FragColor = {glslExpression};");
+
+        var context = new ParsingContext();
+        string resultExpression;
+
+        if (expression.Body is BlockExpression block)
+        {
+            var statements = block.Expressions.Take(block.Expressions.Count - 1);
+            foreach (var stmt in statements)
+            {
+                sb.AppendLine("    " + ParseStatement(stmt, context, block.Variables) + ";");
+            }
+
+            resultExpression = ParseExpression(block.Expressions.Last(), context);
+        }
+        else
+        {
+            resultExpression = ParseExpression(expression.Body, context);
+        }
+
+        sb.AppendLine($"    FragColor = {resultExpression};");
         sb.AppendLine("}");
         return sb.ToString();
     }
 
-    private string ParseExpression(Expression expression)
+    private string ParseStatement(Expression expression, ParsingContext context, IReadOnlyCollection<ParameterExpression> blockVariables)
+    {
+        if (expression is BinaryExpression binary && binary.NodeType == ExpressionType.Assign)
+        {
+            var variable = (ParameterExpression)binary.Left;
+            var variableName = variable.Name;
+            var value = ParseExpression(binary.Right, context);
+
+            if (blockVariables.Contains(variable) && !context.DeclaredVariables.Contains(variableName))
+            {
+                context.DeclaredVariables.Add(variableName);
+                var type = Glsl.FromType(variable.Type);
+                return $"{type} {variableName} = {value}";
+            }
+            else
+            {
+                return $"{variableName} = {value}";
+            }
+        }
+
+        throw new NotSupportedException($"Unsupported statement type: {expression.NodeType}");
+    }
+
+    private string ParseExpression(Expression expression, ParsingContext context)
     {
         switch (expression)
         {
@@ -52,8 +98,8 @@ public class ShaderGenerator
 
             case BinaryExpression binary:
             {
-                var left = ParseExpression(binary.Left);
-                var right = ParseExpression(binary.Right);
+                var left = ParseExpression(binary.Left, context);
+                var right = ParseExpression(binary.Right, context);
                 var op = binary.NodeType switch
                 {
                     ExpressionType.Add => "+",
@@ -74,17 +120,17 @@ public class ShaderGenerator
             case NewExpression newExp:
                 if (newExp.Constructor?.DeclaringType == typeof(Vec4))
                 {
-                    var args = newExp.Arguments.Select(ParseExpression);
+                    var args = newExp.Arguments.Select(a => ParseExpression(a, context));
                     return $"vec4({string.Join(", ", args)})";
                 }
                 if (newExp.Constructor?.DeclaringType == typeof(Vec3))
                 {
-                    var args = newExp.Arguments.Select(ParseExpression);
+                    var args = newExp.Arguments.Select(a => ParseExpression(a, context));
                     return $"vec3({string.Join(", ", args)})";
                 }
                 if (newExp.Constructor?.DeclaringType == typeof(Vec2))
                 {
-                    var args = newExp.Arguments.Select(ParseExpression);
+                    var args = newExp.Arguments.Select(a => ParseExpression(a, context));
                     return $"vec2({string.Join(", ", args)})";
                 }
                 break;
@@ -94,18 +140,15 @@ public class ShaderGenerator
 
             case MemberExpression member:
                 // Uniform access: e.g., uniforms.Time
-                if (member.Expression is ParameterExpression)
+                if (member.Expression is ParameterExpression param && param.Name != null && !context.DeclaredVariables.Contains(param.Name))
                 {
                     return member.Member.Name.ToLower();
                 }
 
-                // Vector member access: e.g., vec.X
-                if ((member.Member.DeclaringType == typeof(Vec2) ||
-                     member.Member.DeclaringType == typeof(Vec3) ||
-                     member.Member.DeclaringType == typeof(Vec4))
-                    && member.Expression != null)
+                // Vector member access or local variable field access
+                if (member.Expression != null)
                 {
-                    var parent = ParseExpression(member.Expression);
+                    var parent = ParseExpression(member.Expression, context);
                     return $"{parent}.{member.Member.Name.ToLower()}";
                 }
                 break;
@@ -113,14 +156,14 @@ public class ShaderGenerator
             case UnaryExpression unary:
                 if (unary.NodeType == ExpressionType.Convert)
                 {
-                    return ParseExpression(unary.Operand);
+                    return ParseExpression(unary.Operand, context);
                 }
                 break;
 
             case MethodCallExpression call:
                 if (call.Method.DeclaringType == typeof(Math) || call.Method.DeclaringType == typeof(ShaderMath))
                 {
-                    var args = call.Arguments.Select(ParseExpression);
+                    var args = call.Arguments.Select(a => ParseExpression(a, context));
                     var functionName = call.Method.Name.ToLower();
                     return $"{functionName}({string.Join(", ", args)})";
                 }
@@ -128,8 +171,8 @@ public class ShaderGenerator
                 var declaringType = call.Method.DeclaringType;
                 if (declaringType == typeof(Vec2) || declaringType == typeof(Vec3) || declaringType == typeof(Vec4))
                 {
-                    var left = ParseExpression(call.Arguments[0]);
-                    var right = ParseExpression(call.Arguments[1]);
+                    var left = ParseExpression(call.Arguments[0], context);
+                    var right = ParseExpression(call.Arguments[1], context);
                     var op = call.Method.Name switch
                     {
                         "op_Addition" => "+",
@@ -144,9 +187,9 @@ public class ShaderGenerator
 
             case ConditionalExpression conditional:
             {
-                var test = ParseExpression(conditional.Test);
-                var ifTrue = ParseExpression(conditional.IfTrue);
-                var ifFalse = ParseExpression(conditional.IfFalse);
+                var test = ParseExpression(conditional.Test, context);
+                var ifTrue = ParseExpression(conditional.IfTrue, context);
+                var ifFalse = ParseExpression(conditional.IfFalse, context);
                 return $"({test}) ? ({ifTrue}) : ({ifFalse})";
             }
         }
