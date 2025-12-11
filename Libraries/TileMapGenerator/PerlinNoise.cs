@@ -5,11 +5,12 @@ namespace TileMapGenerator;
 public static class PerlinNoise
 {
     private static readonly int[] _p = new int[512];
+    private static bool _initialized = false;
 
-    static PerlinNoise()
+    public static void Initialize(int seed)
     {
         var permutation = new int[256];
-        var random = new Random(0);
+        var random = new Random(seed);
         for (var i = 0; i < 256; i++)
         {
             permutation[i] = i;
@@ -25,10 +26,17 @@ public static class PerlinNoise
         {
             _p[256 + i] = _p[i] = permutation[i];
         }
+
+        _initialized = true;
     }
 
     public static float Generate(float x, float y)
     {
+        if (!_initialized)
+        {
+            Initialize(0);
+        }
+
         var xi = (int)x & 255;
         var yi = (int)y & 255;
         var xf = x - (int)x;

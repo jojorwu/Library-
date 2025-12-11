@@ -7,13 +7,15 @@ namespace TileMapGenerator;
 public class MapGenerator
 {
     public int[,] Generate(
-        int width, int height, float scale,
+        int width, int height, float scale, int seed,
         List<NoiseMapping> mappings,
         List<Structure> randomStructures,
         List<PlacedStructure> placedStructures)
     {
         var map = new int[width, height];
         var sortedMappings = mappings.OrderBy(m => m.Threshold).ToList();
+
+        PerlinNoise.Initialize(seed);
 
         // 1. Generate base terrain
         for (var y = 0; y < height; y++)
@@ -27,7 +29,7 @@ public class MapGenerator
         }
 
         // 2. Place random structures
-        var random = new Random();
+        var random = new Random(seed);
         foreach (var structure in randomStructures)
         {
             var x = random.Next(width - structure.Tiles.GetLength(0));
