@@ -77,5 +77,30 @@ public static class ShaderMath
     public static Vec3 Max(Vec3 a, Vec3 b) => throw new NotImplementedException("This method is for shader generation only.");
     public static Vec4 Max(Vec4 a, Vec4 b) => throw new NotImplementedException("This method is for shader generation only.");
 
+    public static float Sin(float a) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec2 Sin(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec3 Sin(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec4 Sin(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
+
+    public static float Tan(float a) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec2 Tan(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec3 Tan(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec4 Tan(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
+
+    public static float Floor(float a) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec2 Floor(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec3 Floor(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec4 Floor(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
+
+    public static float Ceil(float a) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec2 Ceil(Vec2 a) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec3 Ceil(Vec3 a) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec4 Ceil(Vec4 a) => throw new NotImplementedException("This method is for shader generation only.");
+
+    public static float Mod(float x, float y) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec2 Mod(Vec2 x, Vec2 y) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec3 Mod(Vec3 x, Vec3 y) => throw new NotImplementedException("This method is for shader generation only.");
+    public static Vec4 Mod(Vec4 x, Vec4 y) => throw new NotImplementedException("This method is for shader generation only.");
+
     public static void For(Func<object> initializer, Func<bool> condition, Func<object> iterator, Action body) => throw new NotImplementedException("This method is for shader generation only.");
 }

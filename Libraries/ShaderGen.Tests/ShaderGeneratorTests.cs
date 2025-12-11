@@ -33,6 +33,120 @@ void main()
     }
 
     [Test]
+    public void Generate_WithVec2Constant_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate((MyUniforms u) => new Vec4(new Vec2(0.1f, 0.2f), 0.3f, 1.0f));
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+uniform sampler2D maintexture;
+out vec4 FragColor;
+void main()
+{
+    FragColor = vec4(vec2(0.1, 0.2), 0.3, 1.0);
+}
+".Trim();
+        Assert.That(shader.Trim(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Generate_WithVec4Constant_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate((MyUniforms u) => new Vec4(0.1f, 0.2f, 0.3f, 0.4f));
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+uniform sampler2D maintexture;
+out vec4 FragColor;
+void main()
+{
+    FragColor = vec4(0.1, 0.2, 0.3, 0.4);
+}
+".Trim();
+        Assert.That(shader.Trim(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Generate_WithTanFunction_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate((MyUniforms u) => new Vec4(ShaderMath.Tan(u.Time), 0.0f, 0.0f, 1.0f));
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+uniform sampler2D maintexture;
+out vec4 FragColor;
+void main()
+{
+    FragColor = vec4(tan(time), 0.0, 0.0, 1.0);
+}
+".Trim();
+        Assert.That(shader.Trim(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Generate_WithFloorFunction_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate((MyUniforms u) => new Vec4(ShaderMath.Floor(u.Time), 0.0f, 0.0f, 1.0f));
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+uniform sampler2D maintexture;
+out vec4 FragColor;
+void main()
+{
+    FragColor = vec4(floor(time), 0.0, 0.0, 1.0);
+}
+".Trim();
+        Assert.That(shader.Trim(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Generate_WithCeilFunction_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate((MyUniforms u) => new Vec4(ShaderMath.Ceil(u.Time), 0.0f, 0.0f, 1.0f));
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+uniform sampler2D maintexture;
+out vec4 FragColor;
+void main()
+{
+    FragColor = vec4(ceil(time), 0.0, 0.0, 1.0);
+}
+".Trim();
+        Assert.That(shader.Trim(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Generate_WithModFunction_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate((MyUniforms u) => new Vec4(ShaderMath.Mod(u.Time, 1.0f), 0.0f, 0.0f, 1.0f));
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+uniform sampler2D maintexture;
+out vec4 FragColor;
+void main()
+{
+    FragColor = vec4(mod(time, 1.0), 0.0, 0.0, 1.0);
+}
+".Trim();
+        Assert.That(shader.Trim(), Is.EqualTo(expected));
+    }
+
+    [Test]
     public void Generate_WithVec4ScalarConstructor_ReturnsCorrectShader()
     {
         var generator = new ShaderGenerator();
@@ -431,5 +545,24 @@ void main()
 }
 ".Trim();
         Assert.That(shader.Trim().ReplaceLineEndings(), Is.EqualTo(expected.Trim().ReplaceLineEndings()));
+    }
+
+    [Test]
+    public void Generate_WithSinFunction_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate((MyUniforms u) => new Vec4(ShaderMath.Sin(u.Time), 0.0f, 0.0f, 1.0f));
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+uniform sampler2D maintexture;
+out vec4 FragColor;
+void main()
+{
+    FragColor = vec4(sin(time), 0.0, 0.0, 1.0);
+}
+".Trim();
+        Assert.That(shader.Trim(), Is.EqualTo(expected));
     }
 }

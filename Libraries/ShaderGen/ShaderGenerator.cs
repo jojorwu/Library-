@@ -148,9 +148,17 @@ public class ShaderGenerator
                     return floatString;
                 }
 
+                if (constant.Value is Vec2 v2)
+                {
+                    return $"vec2({v2.X.ToString(CultureInfo.InvariantCulture)}, {v2.Y.ToString(CultureInfo.InvariantCulture)})";
+                }
                 if (constant.Value is Vec3 v3)
                 {
                     return $"vec3({v3.X.ToString(CultureInfo.InvariantCulture)}, {v3.Y.ToString(CultureInfo.InvariantCulture)}, {v3.Z.ToString(CultureInfo.InvariantCulture)})";
+                }
+                if (constant.Value is Vec4 v4)
+                {
+                    return $"vec4({v4.X.ToString(CultureInfo.InvariantCulture)}, {v4.Y.ToString(CultureInfo.InvariantCulture)}, {v4.Z.ToString(CultureInfo.InvariantCulture)}, {v4.W.ToString(CultureInfo.InvariantCulture)})";
                 }
 
                 return constant.Value?.ToString() ?? "null";
