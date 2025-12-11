@@ -42,10 +42,18 @@ public class ShaderGenerator
             var statements = block.Expressions.Take(block.Expressions.Count - 1);
             foreach (var stmt in statements)
             {
-                sb.AppendLine("    " + ParseStatement(stmt, context, block.Variables) + ";");
+                sb.AppendLine("    " + ParseStatement(stmt, context, block.Variables));
             }
 
-            resultExpression = ParseExpression(block.Expressions.Last(), context);
+            // The last expression in a block is the return value
+            if (block.Expressions.Last().NodeType != ExpressionType.Default)
+            {
+                resultExpression = ParseExpression(block.Expressions.Last(), context);
+            }
+            else
+            {
+                resultExpression = "vec4(0.0)";
+            }
         }
         else
         {
@@ -65,19 +73,49 @@ public class ShaderGenerator
             var variableName = variable.Name;
             var value = ParseExpression(binary.Right, context);
 
-            if (blockVariables.Contains(variable) && !context.DeclaredVariables.Contains(variableName))
+            if (blockVariables.Contains(variable) && variableName != null && !context.DeclaredVariables.Contains(variableName))
             {
                 context.DeclaredVariables.Add(variableName);
                 var type = Glsl.FromType(variable.Type);
-                return $"{type} {variableName} = {value}";
+                return $"{type} {variableName} = {value};";
             }
-            else
-            {
-                return $"{variableName} = {value}";
-            }
+            return $"{variableName} = {value};";
         }
 
-        throw new NotSupportedException($"Unsupported statement type: {expression.NodeType}");
+        if (expression is ConditionalExpression conditional)
+        {
+            var test = ParseExpression(conditional.Test, context);
+            var ifTrue = ParseBlock(conditional.IfTrue, context);
+            var sb = new StringBuilder();
+            sb.Append($"if ({test}) {ifTrue}");
+
+            if (conditional.IfFalse != null && conditional.IfFalse.NodeType != ExpressionType.Default)
+            {
+                var ifFalse = ParseBlock(conditional.IfFalse, context);
+                sb.Append($" else {ifFalse}");
+            }
+
+            return sb.ToString();
+        }
+
+        return ParseExpression(expression, context) + ";";
+    }
+
+    private string ParseBlock(Expression expression, ParsingContext context)
+    {
+        if (expression is BlockExpression block)
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine("{");
+            foreach (var stmt in block.Expressions.Where(s => s.NodeType != ExpressionType.Default))
+            {
+                sb.AppendLine("    " + ParseStatement(stmt, context, block.Variables));
+            }
+            sb.AppendLine("}");
+            return sb.ToString();
+        }
+
+        return "{ " + ParseStatement(expression, context, new List<ParameterExpression>()) + " }";
     }
 
     private string ParseExpression(Expression expression, ParsingContext context)
@@ -94,6 +132,12 @@ public class ShaderGenerator
                     }
                     return floatString;
                 }
+
+                if (constant.Value is Vec3 v3)
+                {
+                    return $"vec3({v3.X.ToString(CultureInfo.InvariantCulture)}, {v3.Y.ToString(CultureInfo.InvariantCulture)}, {v3.Z.ToString(CultureInfo.InvariantCulture)})";
+                }
+
                 return constant.Value?.ToString() ?? "null";
 
             case BinaryExpression binary:

@@ -185,4 +185,69 @@ void main()
 ".Trim();
         Assert.That(shader.Trim(), Is.EqualTo(expected));
     }
+
+    [Test]
+    public void Generate_WithCosFunction_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+        var shader = generator.Generate((MyUniforms u) => new Vec4((float)Math.Cos(u.Time), 0.0f, 0.0f, 1.0f));
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+uniform sampler2D maintexture;
+out vec4 FragColor;
+void main()
+{
+    FragColor = vec4(cos(time), 0.0, 0.0, 1.0);
+}
+".Trim();
+        Assert.That(shader.Trim(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Generate_WithIfStatement_ReturnsCorrectShader()
+    {
+        var generator = new ShaderGenerator();
+
+        var u = Expression.Parameter(typeof(MyUniforms), "u");
+        var color = Expression.Variable(typeof(Vec3), "color");
+
+        var assignColor = Expression.Assign(color, Expression.Constant(new Vec3(0.0f, 0.0f, 0.0f)));
+
+        var ifThenElse = Expression.IfThenElse(
+            Expression.GreaterThan(Expression.Property(u, "Time"), Expression.Constant(0.5f)),
+            Expression.Assign(color, Expression.Constant(new Vec3(1.0f, 0.0f, 0.0f))),
+            Expression.Assign(color, Expression.Constant(new Vec3(0.0f, 1.0f, 0.0f)))
+        );
+
+        var returnVal = Expression.New(
+            typeof(Vec4).GetConstructor(new[] { typeof(float), typeof(float), typeof(float), typeof(float) }),
+            Expression.Field(color, "X"),
+            Expression.Field(color, "Y"),
+            Expression.Field(color, "Z"),
+            Expression.Constant(1.0f)
+        );
+
+        var block = Expression.Block(new[] { color }, assignColor, ifThenElse, returnVal);
+        var lambda = Expression.Lambda<System.Func<MyUniforms, Vec4>>(block, u);
+
+        var shader = generator.Generate(lambda);
+
+        // Note: The generated code is not perfectly formatted, but it is functionally correct.
+        var expected = @"
+#version 330 core
+uniform float time;
+uniform vec2 resolution;
+uniform sampler2D maintexture;
+out vec4 FragColor;
+void main()
+{
+    vec3 color = vec3(0, 0, 0);
+    if ((time > 0.5)) { color = vec3(1, 0, 0); } else { color = vec3(0, 1, 0); }
+    FragColor = vec4(color.x, color.y, color.z, 1.0);
+}
+".Trim();
+        Assert.That(shader.Trim().ReplaceLineEndings(), Is.EqualTo(expected.Trim().ReplaceLineEndings()));
+    }
 }
