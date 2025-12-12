@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace Pathfinding;
 
@@ -9,73 +10,76 @@ public class AStarPathfinder
     private const int MOVE_STRAIGHT_COST = 10;
     private const int MOVE_DIAGONAL_COST = 14;
 
-    public List<Node> FindPath(int[,] grid, int startX, int startY, int endX, int endY)
+    public Task<List<Node>> FindPath(int[,] grid, int startX, int startY, int endX, int endY)
     {
-        int height = grid.GetLength(0);
-        int width = grid.GetLength(1);
-
-        // Input validation
-        if (startX < 0 || startX >= width || startY < 0 || startY >= height ||
-            endX < 0 || endX >= width || endY < 0 || endY >= height)
+        return Task.Run(() =>
         {
-            return new List<Node>(); // Out of bounds
-        }
+            int height = grid.GetLength(0);
+            int width = grid.GetLength(1);
 
-        var nodes = new Node[height, width];
-        for (var y = 0; y < height; y++)
-        {
-            for (var x = 0; x < width; x++)
+            // Input validation
+            if (startX < 0 || startX >= width || startY < 0 || startY >= height ||
+                endX < 0 || endX >= width || endY < 0 || endY >= height)
             {
-                nodes[y, x] = new Node(x, y, grid[y, x]);
-            }
-        }
-
-        var startNode = nodes[startY, startX];
-        var endNode = nodes[endY, endX];
-
-        if (!startNode.IsWalkable || !endNode.IsWalkable)
-        {
-            return new List<Node>(); // Start or end node is not walkable
-        }
-
-        if (startNode == endNode) return new List<Node> { startNode };
-
-        startNode.GCost = 0;
-        startNode.HCost = GetDistance(startNode, endNode);
-
-        var openSet = new PriorityQueue<Node, int>();
-        openSet.Enqueue(startNode, startNode.FCost);
-        var closedSet = new HashSet<Node>();
-
-        while (openSet.Count > 0)
-        {
-            var currentNode = openSet.Dequeue();
-            closedSet.Add(currentNode);
-
-            if (currentNode == endNode)
-            {
-                return RetracePath(startNode, endNode);
+                return new List<Node>(); // Out of bounds
             }
 
-            foreach (var neighbor in GetNeighbors(nodes, currentNode))
+            var nodes = new Node[height, width];
+            for (var y = 0; y < height; y++)
             {
-                if (!neighbor.IsWalkable || closedSet.Contains(neighbor))
+                for (var x = 0; x < width; x++)
                 {
-                    continue;
-                }
-
-                var newCostToNeighbor = currentNode.GCost + GetDistance(currentNode, neighbor) + neighbor.MovementCost;
-                if (newCostToNeighbor < neighbor.GCost)
-                {
-                    neighbor.GCost = newCostToNeighbor;
-                    neighbor.HCost = GetDistance(neighbor, endNode);
-                    neighbor.Parent = currentNode;
-                    openSet.Enqueue(neighbor, neighbor.FCost);
+                    nodes[y, x] = new Node(x, y, grid[y, x]);
                 }
             }
-        }
 
-        return new List<Node>();
+            var startNode = nodes[startY, startX];
+            var endNode = nodes[endY, endX];
+
+            if (!startNode.IsWalkable || !endNode.IsWalkable)
+            {
+                return new List<Node>(); // Start or end node is not walkable
+            }
+
+            if (startNode == endNode) return new List<Node> { startNode };
+
+            startNode.GCost = 0;
+            startNode.HCost = GetDistance(startNode, endNode);
+
+            var openSet = new PriorityQueue<Node, int>();
+            openSet.Enqueue(startNode, startNode.FCost);
+            var closedSet = new HashSet<Node>();
+
+            while (openSet.Count > 0)
+            {
+                var currentNode = openSet.Dequeue();
+                closedSet.Add(currentNode);
+
+                if (currentNode == endNode)
+                {
+                    return RetracePath(startNode, endNode);
+                }
+
+                foreach (var neighbor in GetNeighbors(nodes, currentNode))
+                {
+                    if (!neighbor.IsWalkable || closedSet.Contains(neighbor))
+                    {
+                        continue;
+                    }
+
+                    var newCostToNeighbor = currentNode.GCost + GetDistance(currentNode, neighbor) + neighbor.MovementCost;
+                    if (newCostToNeighbor < neighbor.GCost)
+                    {
+                        neighbor.GCost = newCostToNeighbor;
+                        neighbor.HCost = GetDistance(neighbor, endNode);
+                        neighbor.Parent = currentNode;
+                        openSet.Enqueue(neighbor, neighbor.FCost);
+                    }
+                }
+            }
+
+            return new List<Node>();
+        });
     }
 
     private static List<Node> RetracePath(Node startNode, Node endNode)
