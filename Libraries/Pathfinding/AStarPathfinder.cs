@@ -9,7 +9,7 @@ public class AStarPathfinder
     private const int MOVE_STRAIGHT_COST = 10;
     private const int MOVE_DIAGONAL_COST = 14;
 
-    public List<Node> FindPath(bool[,] grid, int startX, int startY, int endX, int endY)
+    public List<Node> FindPath(int[,] grid, int startX, int startY, int endX, int endY)
     {
         int height = grid.GetLength(0);
         int width = grid.GetLength(1);
@@ -19,11 +19,6 @@ public class AStarPathfinder
             endX < 0 || endX >= width || endY < 0 || endY >= height)
         {
             return new List<Node>(); // Out of bounds
-        }
-
-        if (!grid[startY, startX] || !grid[endY, endX])
-        {
-            return new List<Node>(); // Start or end node is not walkable
         }
 
         var nodes = new Node[height, width];
@@ -37,6 +32,11 @@ public class AStarPathfinder
 
         var startNode = nodes[startY, startX];
         var endNode = nodes[endY, endX];
+
+        if (!startNode.IsWalkable || !endNode.IsWalkable)
+        {
+            return new List<Node>(); // Start or end node is not walkable
+        }
 
         if (startNode == endNode) return new List<Node> { startNode };
 
@@ -64,7 +64,7 @@ public class AStarPathfinder
                     continue;
                 }
 
-                var newCostToNeighbor = currentNode.GCost + GetDistance(currentNode, neighbor);
+                var newCostToNeighbor = currentNode.GCost + GetDistance(currentNode, neighbor) + neighbor.MovementCost;
                 if (newCostToNeighbor < neighbor.GCost)
                 {
                     neighbor.GCost = newCostToNeighbor;
