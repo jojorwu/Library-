@@ -10,7 +10,7 @@ public class AStarPathfinder
     private const int MOVE_STRAIGHT_COST = 10;
     private const int MOVE_DIAGONAL_COST = 14;
 
-    public Task<List<Node>> FindPath(int[,] grid, int startX, int startY, int endX, int endY)
+    public Task<List<Node>> FindPath(int[,] grid, int startX, int startY, int endX, int endY, bool smoothPath = false)
     {
         return Task.Run(() =>
         {
@@ -50,6 +50,8 @@ public class AStarPathfinder
             openSet.Enqueue(startNode, startNode.FCost);
             var closedSet = new HashSet<Node>();
 
+            List<Node> path = new List<Node>();
+
             while (openSet.Count > 0)
             {
                 var currentNode = openSet.Dequeue();
@@ -57,7 +59,8 @@ public class AStarPathfinder
 
                 if (currentNode == endNode)
                 {
-                    return RetracePath(startNode, endNode);
+                    path = RetracePath(startNode, endNode);
+                    break;
                 }
 
                 foreach (var neighbor in GetNeighbors(nodes, currentNode))
@@ -78,7 +81,12 @@ public class AStarPathfinder
                 }
             }
 
-            return new List<Node>();
+            if (smoothPath)
+            {
+                path = PathSmoother.SmoothPath(grid, path);
+            }
+
+            return path;
         });
     }
 
