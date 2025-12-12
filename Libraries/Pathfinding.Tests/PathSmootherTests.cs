@@ -12,7 +12,7 @@ public class PathSmootherTests
     private const int O = int.MaxValue; // Obstacle
 
     [Test]
-    public async Task SmoothPath_WithSimpleJaggedPath_ReturnsStraightPath()
+    public async Task SmoothPath_WithSimpleJaggedPath_ReturnsStraightPathAndCorrectCost()
     {
         var grid = new int[,]
         {
@@ -22,18 +22,18 @@ public class PathSmootherTests
         };
 
         var pathfinder = new AStarPathfinder();
-        // Get a jagged path first, then smooth it
-        var jaggedPath = await pathfinder.FindPath(grid, 0, 0, 4, 2);
-        var smoothedPath = PathSmoother.SmoothPath(grid, jaggedPath);
+        var jaggedPathResult = await pathfinder.FindPath(grid, 0, 0, 4, 2);
+        var smoothedResult = PathSmoother.SmoothPath(grid, jaggedPathResult);
 
         var expectedPath = new List<(int, int)> { (0, 0), (4, 2) };
-        var actualPath = smoothedPath.Select(p => (p.X, p.Y)).ToList();
+        var actualPath = smoothedResult.Nodes.Select(p => (p.X, p.Y)).ToList();
 
         Assert.That(actualPath, Is.EqualTo(expectedPath));
+        Assert.That(smoothedResult.TotalCost, Is.EqualTo(49));
     }
 
     [Test]
-    public async Task SmoothPath_WithPathAroundObstacle_DoesNotCutCorner()
+    public async Task SmoothPath_WithPathAroundObstacle_DoesNotCutCornerAndHasCorrectCost()
     {
         var grid = new int[,]
         {
@@ -45,18 +45,18 @@ public class PathSmootherTests
         };
 
         var pathfinder = new AStarPathfinder();
-        var jaggedPath = await pathfinder.FindPath(grid, 1, 2, 3, 2);
-        var smoothedPath = PathSmoother.SmoothPath(grid, jaggedPath);
+        var jaggedPathResult = await pathfinder.FindPath(grid, 1, 2, 3, 2);
+        var smoothedResult = PathSmoother.SmoothPath(grid, jaggedPathResult);
 
-        // The correct smoothed path should navigate around the corners of the obstacle
         var expectedPath = new List<(int, int)> { (1, 2), (1, 0), (3, 0), (3, 2) };
-        var actualPath = smoothedPath.Select(p => (p.X, p.Y)).ToList();
+        var actualPath = smoothedResult.Nodes.Select(p => (p.X, p.Y)).ToList();
 
         Assert.That(actualPath, Is.EqualTo(expectedPath));
+        Assert.That(smoothedResult.TotalCost, Is.EqualTo(63));
     }
 
     [Test]
-    public async Task FindPath_WithSmoothingEnabled_ReturnsSmoothedPath()
+    public async Task FindPath_WithSmoothingEnabled_ReturnsSmoothedPathAndCorrectCost()
     {
         var grid = new int[,]
         {
@@ -66,11 +66,12 @@ public class PathSmootherTests
         };
 
         var pathfinder = new AStarPathfinder();
-        var smoothedPath = await pathfinder.FindPath(grid, 0, 0, 4, 2, true);
+        var smoothedResult = await pathfinder.FindPath(grid, 0, 0, 4, 2, true);
 
         var expectedPath = new List<(int, int)> { (0, 0), (4, 2) };
-        var actualPath = smoothedPath.Select(p => (p.X, p.Y)).ToList();
+        var actualPath = smoothedResult.Nodes.Select(p => (p.X, p.Y)).ToList();
 
         Assert.That(actualPath, Is.EqualTo(expectedPath));
+        Assert.That(smoothedResult.TotalCost, Is.EqualTo(49));
     }
 }

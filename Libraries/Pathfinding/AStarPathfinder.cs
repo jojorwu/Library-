@@ -7,10 +7,7 @@ namespace Pathfinding;
 
 public class AStarPathfinder
 {
-    private const int MOVE_STRAIGHT_COST = 10;
-    private const int MOVE_DIAGONAL_COST = 14;
-
-    public Task<List<Node>> FindPath(int[,] grid, int startX, int startY, int endX, int endY, bool smoothPath = false)
+    public Task<PathResult> FindPath(int[,] grid, int startX, int startY, int endX, int endY, bool smoothPath = false)
     {
         return Task.Run(() =>
         {
@@ -21,7 +18,7 @@ public class AStarPathfinder
             if (startX < 0 || startX >= width || startY < 0 || startY >= height ||
                 endX < 0 || endX >= width || endY < 0 || endY >= height)
             {
-                return new List<Node>(); // Out of bounds
+                return new PathResult(new List<Node>(), 0); // Out of bounds
             }
 
             var nodes = new Node[height, width];
@@ -38,19 +35,19 @@ public class AStarPathfinder
 
             if (!startNode.IsWalkable || !endNode.IsWalkable)
             {
-                return new List<Node>(); // Start or end node is not walkable
+                return new PathResult(new List<Node>(), 0); // Start or end node is not walkable
             }
 
-            if (startNode == endNode) return new List<Node> { startNode };
+            if (startNode == endNode) return new PathResult(new List<Node> { startNode }, 0);
 
             startNode.GCost = 0;
-            startNode.HCost = GetDistance(startNode, endNode);
+            startNode.HCost = PathfindingUtils.GetDistance(startNode, endNode);
 
             var openSet = new PriorityQueue<Node, int>();
             openSet.Enqueue(startNode, startNode.FCost);
             var closedSet = new HashSet<Node>();
 
-            List<Node> path = new List<Node>();
+            PathResult pathResult = new PathResult(new List<Node>(), 0);
 
             while (openSet.Count > 0)
             {
@@ -59,7 +56,8 @@ public class AStarPathfinder
 
                 if (currentNode == endNode)
                 {
-                    path = RetracePath(startNode, endNode);
+                    var path = RetracePath(startNode, endNode);
+                    pathResult = new PathResult(path, endNode.GCost);
                     break;
                 }
 
@@ -70,11 +68,11 @@ public class AStarPathfinder
                         continue;
                     }
 
-                    var newCostToNeighbor = currentNode.GCost + GetDistance(currentNode, neighbor) + neighbor.MovementCost;
+                    var newCostToNeighbor = currentNode.GCost + PathfindingUtils.GetDistance(currentNode, neighbor) + neighbor.MovementCost;
                     if (newCostToNeighbor < neighbor.GCost)
                     {
                         neighbor.GCost = newCostToNeighbor;
-                        neighbor.HCost = GetDistance(neighbor, endNode);
+                        neighbor.HCost = PathfindingUtils.GetDistance(neighbor, endNode);
                         neighbor.Parent = currentNode;
                         openSet.Enqueue(neighbor, neighbor.FCost);
                     }
@@ -83,10 +81,10 @@ public class AStarPathfinder
 
             if (smoothPath)
             {
-                path = PathSmoother.SmoothPath(grid, path);
+                pathResult = PathSmoother.SmoothPath(grid, pathResult);
             }
 
-            return path;
+            return pathResult;
         });
     }
 
@@ -142,13 +140,4 @@ public class AStarPathfinder
         return neighbors;
     }
 
-    private int GetDistance(Node nodeA, Node nodeB)
-    {
-        int dstX = Math.Abs(nodeA.X - nodeB.X);
-        int dstY = Math.Abs(nodeA.Y - nodeB.Y);
-
-        if (dstX > dstY)
-            return MOVE_DIAGONAL_COST * dstY + MOVE_STRAIGHT_COST * (dstX - dstY);
-        return MOVE_DIAGONAL_COST * dstX + MOVE_STRAIGHT_COST * (dstY - dstX);
-    }
 }

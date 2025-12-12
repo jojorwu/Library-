@@ -12,7 +12,7 @@ public class AStarPathfinderTests
     private const int O = int.MaxValue; // Obstacle
 
     [Test]
-    public async Task FindPath_WithSimplePath_ReturnsCorrectPath()
+    public async Task FindPath_WithSimplePath_ReturnsCorrectPathAndCost()
     {
         var grid = new int[,]
         {
@@ -21,16 +21,17 @@ public class AStarPathfinderTests
             { W, W, W }
         };
         var pathfinder = new AStarPathfinder();
-        var path = await pathfinder.FindPath(grid, 0, 0, 2, 2);
+        var result = await pathfinder.FindPath(grid, 0, 0, 2, 2);
 
         var expectedPath = new List<(int, int)> { (0, 0), (1, 1), (2, 2) };
-        var actualPath = path.Select(p => (p.X, p.Y)).ToList();
+        var actualPath = result.Nodes.Select(p => (p.X, p.Y)).ToList();
 
         Assert.That(actualPath, Is.EqualTo(expectedPath));
+        Assert.That(result.TotalCost, Is.EqualTo(30));
     }
 
     [Test]
-    public async Task FindPath_WithObstacles_ReturnsCorrectPath()
+    public async Task FindPath_WithObstacles_ReturnsCorrectPathAndCost()
     {
         var grid = new int[,]
         {
@@ -41,19 +42,20 @@ public class AStarPathfinderTests
             { O, W, W, W, W } // Block one of the optimal paths
         };
         var pathfinder = new AStarPathfinder();
-        var path = await pathfinder.FindPath(grid, 0, 0, 4, 4);
+        var result = await pathfinder.FindPath(grid, 0, 0, 4, 4);
 
         var expectedPath = new List<(int, int)>
         {
             (0, 0), (0, 1), (0, 2), (1, 2), (2, 2), (3, 2), (4, 2), (4, 3), (4, 4)
         };
-        var actualPath = path.Select(p => (p.X, p.Y)).ToList();
+        var actualPath = result.Nodes.Select(p => (p.X, p.Y)).ToList();
 
         Assert.That(actualPath, Is.EqualTo(expectedPath));
+        Assert.That(result.TotalCost, Is.EqualTo(88));
     }
 
     [Test]
-    public async Task FindPath_WithNoPath_ReturnsEmptyList()
+    public async Task FindPath_WithNoPath_ReturnsEmptyResult()
     {
         var grid = new int[,]
         {
@@ -62,12 +64,13 @@ public class AStarPathfinderTests
             { W, O, W }
         };
         var pathfinder = new AStarPathfinder();
-        var path = await pathfinder.FindPath(grid, 0, 0, 2, 0);
-        Assert.That(path, Is.Empty);
+        var result = await pathfinder.FindPath(grid, 0, 0, 2, 0);
+        Assert.That(result.Nodes, Is.Empty);
+        Assert.That(result.TotalCost, Is.EqualTo(0));
     }
 
     [Test]
-    public async Task FindPath_WithStartAndEndSame_ReturnsPathWithOneNode()
+    public async Task FindPath_WithStartAndEndSame_ReturnsPathWithOneNodeAndZeroCost()
     {
         var grid = new int[,]
         {
@@ -76,10 +79,11 @@ public class AStarPathfinderTests
             { W, W, W }
         };
         var pathfinder = new AStarPathfinder();
-        var path = await pathfinder.FindPath(grid, 1, 1, 1, 1);
-        Assert.That(path.Count, Is.EqualTo(1));
-        Assert.That(path.Single().X, Is.EqualTo(1));
-        Assert.That(path.Single().Y, Is.EqualTo(1));
+        var result = await pathfinder.FindPath(grid, 1, 1, 1, 1);
+        Assert.That(result.Nodes.Count, Is.EqualTo(1));
+        Assert.That(result.Nodes.Single().X, Is.EqualTo(1));
+        Assert.That(result.Nodes.Single().Y, Is.EqualTo(1));
+        Assert.That(result.TotalCost, Is.EqualTo(0));
     }
 
     [TestCase(-1, 0, 1, 1)]
@@ -90,7 +94,7 @@ public class AStarPathfinderTests
     [TestCase(0, 0, 1, -1)]
     [TestCase(0, 0, 3, 1)]
     [TestCase(0, 0, 1, 3)]
-    public async Task FindPath_WithOutOfBoundsCoordinates_ReturnsEmptyList(int startX, int startY, int endX, int endY)
+    public async Task FindPath_WithOutOfBoundsCoordinates_ReturnsEmptyResult(int startX, int startY, int endX, int endY)
     {
         var grid = new int[,]
         {
@@ -99,12 +103,13 @@ public class AStarPathfinderTests
             { W, W, W }
         };
         var pathfinder = new AStarPathfinder();
-        var path = await pathfinder.FindPath(grid, startX, startY, endX, endY);
-        Assert.That(path, Is.Empty);
+        var result = await pathfinder.FindPath(grid, startX, startY, endX, endY);
+        Assert.That(result.Nodes, Is.Empty);
+        Assert.That(result.TotalCost, Is.EqualTo(0));
     }
 
     [Test]
-    public async Task FindPath_WithUnwalkableStart_ReturnsEmptyList()
+    public async Task FindPath_WithUnwalkableStart_ReturnsEmptyResult()
     {
         var grid = new int[,]
         {
@@ -113,12 +118,13 @@ public class AStarPathfinderTests
             { W, W, W }
         };
         var pathfinder = new AStarPathfinder();
-        var path = await pathfinder.FindPath(grid, 0, 0, 2, 2);
-        Assert.That(path, Is.Empty);
+        var result = await pathfinder.FindPath(grid, 0, 0, 2, 2);
+        Assert.That(result.Nodes, Is.Empty);
+        Assert.That(result.TotalCost, Is.EqualTo(0));
     }
 
     [Test]
-    public async Task FindPath_WithUnwalkableEnd_ReturnsEmptyList()
+    public async Task FindPath_WithUnwalkableEnd_ReturnsEmptyResult()
     {
         var grid = new int[,]
         {
@@ -127,26 +133,26 @@ public class AStarPathfinderTests
             { W, W, O }
         };
         var pathfinder = new AStarPathfinder();
-        var path = await pathfinder.FindPath(grid, 0, 0, 2, 2);
-        Assert.That(path, Is.Empty);
+        var result = await pathfinder.FindPath(grid, 0, 0, 2, 2);
+        Assert.That(result.Nodes, Is.Empty);
+        Assert.That(result.TotalCost, Is.EqualTo(0));
     }
 
     [Test]
-    public async Task FindPath_PrefersCheaperPathOverShorterPath()
+    public async Task FindPath_PrefersCheaperPathOverShorterPath_ReturnsCorrectPathAndCost()
     {
-        // The direct path (0,0 -> 1,0 -> 2,0) is shorter but goes through a high-cost tile (100).
-        // The longer path around the high-cost tile is cheaper.
         var grid = new int[,]
         {
             { W, 100, W },
             { W, W,   W },
         };
         var pathfinder = new AStarPathfinder();
-        var path = await pathfinder.FindPath(grid, 0, 0, 2, 0);
+        var result = await pathfinder.FindPath(grid, 0, 0, 2, 0);
 
         var expectedPath = new List<(int, int)> { (0, 0), (1, 1), (2, 0) };
-        var actualPath = path.Select(p => (p.X, p.Y)).ToList();
+        var actualPath = result.Nodes.Select(p => (p.X, p.Y)).ToList();
 
         Assert.That(actualPath, Is.EqualTo(expectedPath));
+        Assert.That(result.TotalCost, Is.EqualTo(30));
     }
 }

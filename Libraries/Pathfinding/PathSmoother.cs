@@ -5,39 +5,47 @@ namespace Pathfinding;
 
 public static class PathSmoother
 {
-    public static List<Node> SmoothPath(int[,] grid, List<Node> path)
+    public static PathResult SmoothPath(int[,] grid, PathResult originalPath)
     {
-        if (path == null)
+        if (originalPath.Nodes == null || originalPath.Nodes.Count < 2)
         {
-            return new List<Node>();
-        }
-        if (path.Count < 2)
-        {
-            return path;
+            return originalPath;
         }
 
-        var newPath = new List<Node> { path[0] };
+        var newPathNodes = new List<Node> { originalPath.Nodes[0] };
         int currentIndex = 0;
 
-        while (currentIndex < path.Count - 1)
+        while (currentIndex < originalPath.Nodes.Count - 1)
         {
             int lastVisibleIndex = currentIndex + 1;
-            for (int i = currentIndex + 2; i < path.Count; i++)
+            for (int i = currentIndex + 2; i < originalPath.Nodes.Count; i++)
             {
-                if (HasLineOfSight(grid, path[currentIndex], path[i]))
+                if (HasLineOfSight(grid, originalPath.Nodes[currentIndex], originalPath.Nodes[i]))
                 {
                     lastVisibleIndex = i;
                 }
                 else
                 {
-                    break; // Stop if line of sight is broken
+                    break;
                 }
             }
-            newPath.Add(path[lastVisibleIndex]);
+            newPathNodes.Add(originalPath.Nodes[lastVisibleIndex]);
             currentIndex = lastVisibleIndex;
         }
 
-        return newPath;
+        int newCost = GetPathCost(newPathNodes);
+        return new PathResult(newPathNodes, newCost);
+    }
+
+    private static int GetPathCost(List<Node> path)
+    {
+        int totalCost = 0;
+        for (int i = 0; i < path.Count - 1; i++)
+        {
+            totalCost += PathfindingUtils.GetDistance(path[i], path[i + 1]);
+            totalCost += path[i + 1].MovementCost;
+        }
+        return totalCost;
     }
 
     private static bool HasLineOfSight(int[,] grid, Node start, Node end)
@@ -57,7 +65,6 @@ public static class PathSmoother
 
         while (true)
         {
-            // Check current node for obstacle
             if (grid[y0, x0] >= int.MaxValue) return false;
 
             if (x0 == x1 && y0 == y1) break;
@@ -77,7 +84,6 @@ public static class PathSmoother
                 y0 += sy;
             }
 
-            // Check for obstacles when moving diagonally
             if (x0 != x_old && y0 != y_old)
             {
                 if (grid[y_old, x0] >= int.MaxValue || grid[y0, x_old] >= int.MaxValue)
