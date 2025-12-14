@@ -172,7 +172,7 @@ public class AStarPathfinderTests
             { W, W, W }
         };
         var pathfinder = new AStarPathfinder();
-        var result = await pathfinder.FindPath(grid, 0, 0, 1, 1, findClosestIfBlocked: true);
+        var result = await pathfinder.FindPath(grid, 0, 0, 1, 1, new PathfindingOptions { FindClosestIfBlocked = true });
 
         var expectedPath = new List<(int, int)> { (0, 0), (1, 0) };
         var actualPath = result.Nodes.Select(p => (p.X, p.Y)).ToList();
@@ -190,7 +190,7 @@ public class AStarPathfinderTests
             { W, O, W }
         };
         var pathfinder = new AStarPathfinder();
-        var result = await pathfinder.FindPath(grid, 0, 0, 1, 1, findClosestIfBlocked: true);
+        var result = await pathfinder.FindPath(grid, 0, 0, 1, 1, new PathfindingOptions { FindClosestIfBlocked = true });
 
         Assert.That(result.Nodes, Is.Empty);
     }

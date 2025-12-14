@@ -66,7 +66,7 @@ public class PathSmootherTests
         };
 
         var pathfinder = new AStarPathfinder();
-        var smoothedResult = await pathfinder.FindPath(grid, 0, 0, 4, 2, true);
+        var smoothedResult = await pathfinder.FindPath(grid, 0, 0, 4, 2, new PathfindingOptions { SmoothPath = true });
 
         var expectedPath = new List<(int, int)> { (0, 0), (4, 2) };
         var actualPath = smoothedResult.Nodes.Select(p => (p.X, p.Y)).ToList();

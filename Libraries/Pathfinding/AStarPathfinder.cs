@@ -7,18 +7,20 @@ namespace Pathfinding;
 
 public class AStarPathfinder
 {
-    public async Task<PathResult> FindPath(int[,] grid, int startX, int startY, int endX, int endY, bool smoothPath = false, bool useCache = true, bool findClosestIfBlocked = false)
+    public async Task<PathResult> FindPath(int[,] grid, int startX, int startY, int endX, int endY, PathfindingOptions? options = null)
     {
+        options ??= PathfindingOptions.Default;
+
         long gridHash = PathfindingUtils.GetGridHash(grid);
-        var cacheKey = (gridHash, startX, startY, endX, endY, smoothPath, findClosestIfBlocked);
-        if (useCache && PathCache.TryGetValue(cacheKey, out var cachedResult))
+        var cacheKey = (gridHash, startX, startY, endX, endY, options.GetHashCode());
+        if (options.UseCache && PathCache.TryGetValue(cacheKey, out var cachedResult))
         {
             return cachedResult;
         }
 
-        var pathResult = await CalculatePathAsync(grid, startX, startY, endX, endY, smoothPath, findClosestIfBlocked);
+        var pathResult = await CalculatePathAsync(grid, startX, startY, endX, endY, options);
 
-        if (useCache)
+        if (options.UseCache)
         {
             PathCache.Set(cacheKey, pathResult);
         }
@@ -26,7 +28,7 @@ public class AStarPathfinder
         return pathResult;
     }
 
-    private Task<PathResult> CalculatePathAsync(int[,] grid, int startX, int startY, int endX, int endY, bool smoothPath, bool findClosestIfBlocked)
+    private Task<PathResult> CalculatePathAsync(int[,] grid, int startX, int startY, int endX, int endY, PathfindingOptions options)
     {
         return Task.Run(() =>
         {
@@ -55,7 +57,7 @@ public class AStarPathfinder
 
             if (!endNode.IsWalkable)
             {
-                if (findClosestIfBlocked)
+                if (options.FindClosestIfBlocked)
                 {
                     var nearestNode = FindNearestWalkableNode(nodes, startNode, endNode);
                     if (nearestNode == null) return new PathResult(new List<Node>(), 0);
@@ -105,7 +107,7 @@ public class AStarPathfinder
                 }
             }
 
-            if (smoothPath)
+            if (options.SmoothPath)
             {
                 pathResult = PathSmoother.SmoothPath(grid, pathResult);
             }
@@ -114,7 +116,7 @@ public class AStarPathfinder
         });
     }
 
-    private Node FindNearestWalkableNode(Node[,] nodes, Node startNode, Node targetNode)
+    private Node? FindNearestWalkableNode(Node[,] nodes, Node startNode, Node targetNode)
     {
         int maxRadius = Math.Max(nodes.GetLength(0), nodes.GetLength(1));
         for (int radius = 1; radius < maxRadius; radius++)
@@ -142,7 +144,7 @@ public class AStarPathfinder
 
             if (candidates.Any())
             {
-                Node bestNode = null;
+                Node? bestNode = null;
                 int bestDistance = int.MaxValue;
                 foreach (var candidate in candidates)
                 {

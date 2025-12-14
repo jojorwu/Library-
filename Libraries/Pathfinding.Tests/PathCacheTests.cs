@@ -75,7 +75,7 @@ public class PathCacheTests
         Assert.That(result1.Nodes.Count, Is.EqualTo(3));
 
         // This call should not use the cache and should not add to it.
-        var result2 = await pathfinder.FindPath(grid, 0, 0, 2, 0, useCache: false);
+        var result2 = await pathfinder.FindPath(grid, 0, 0, 2, 0, new PathfindingOptions { UseCache = false });
 
         Assert.That(result2.Nodes.Count, Is.EqualTo(3));
         Assert.That(ReferenceEquals(result1, result2), Is.False);
