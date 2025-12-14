@@ -7,7 +7,26 @@ namespace Pathfinding;
 
 public class AStarPathfinder
 {
-    public Task<PathResult> FindPath(int[,] grid, int startX, int startY, int endX, int endY, bool smoothPath = false)
+    public async Task<PathResult> FindPath(int[,] grid, int startX, int startY, int endX, int endY, bool smoothPath = false, bool useCache = true)
+    {
+        long gridHash = PathfindingUtils.GetGridHash(grid);
+        var cacheKey = (gridHash, startX, startY, endX, endY, smoothPath);
+        if (useCache && PathCache.TryGetValue(cacheKey, out var cachedResult))
+        {
+            return cachedResult;
+        }
+
+        var pathResult = await CalculatePathAsync(grid, startX, startY, endX, endY, smoothPath);
+
+        if (useCache)
+        {
+            PathCache.Set(cacheKey, pathResult);
+        }
+
+        return pathResult;
+    }
+
+    private Task<PathResult> CalculatePathAsync(int[,] grid, int startX, int startY, int endX, int endY, bool smoothPath)
     {
         return Task.Run(() =>
         {

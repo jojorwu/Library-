@@ -11,6 +11,12 @@ public class AStarPathfinderTests
     private const int W = 1; // Walkable
     private const int O = int.MaxValue; // Obstacle
 
+    [TearDown]
+    public void TearDown()
+    {
+        PathCache.Clear();
+    }
+
     [Test]
     public async Task FindPath_WithSimplePath_ReturnsCorrectPathAndCost()
     {
