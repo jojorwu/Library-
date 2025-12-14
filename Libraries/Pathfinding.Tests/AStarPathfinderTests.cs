@@ -161,4 +161,37 @@ public class AStarPathfinderTests
         Assert.That(actualPath, Is.EqualTo(expectedPath));
         Assert.That(result.TotalCost, Is.EqualTo(30));
     }
+
+    [Test]
+    public async Task FindPath_FindClosestIfBlocked_FindsClosestWalkableNode()
+    {
+        var grid = new int[,]
+        {
+            { W, W, W },
+            { W, O, W },
+            { W, W, W }
+        };
+        var pathfinder = new AStarPathfinder();
+        var result = await pathfinder.FindPath(grid, 0, 0, 1, 1, findClosestIfBlocked: true);
+
+        var expectedPath = new List<(int, int)> { (0, 0), (1, 0) };
+        var actualPath = result.Nodes.Select(p => (p.X, p.Y)).ToList();
+
+        Assert.That(actualPath, Is.EqualTo(expectedPath));
+    }
+
+    [Test]
+    public async Task FindPath_FindClosestIfBlocked_FailsIfNoWalkableNodeFound()
+    {
+        var grid = new int[,]
+        {
+            { W, O, W },
+            { O, O, O },
+            { W, O, W }
+        };
+        var pathfinder = new AStarPathfinder();
+        var result = await pathfinder.FindPath(grid, 0, 0, 1, 1, findClosestIfBlocked: true);
+
+        Assert.That(result.Nodes, Is.Empty);
+    }
 }

@@ -7,16 +7,16 @@ namespace Pathfinding;
 
 public class AStarPathfinder
 {
-    public async Task<PathResult> FindPath(int[,] grid, int startX, int startY, int endX, int endY, bool smoothPath = false, bool useCache = true)
+    public async Task<PathResult> FindPath(int[,] grid, int startX, int startY, int endX, int endY, bool smoothPath = false, bool useCache = true, bool findClosestIfBlocked = false)
     {
         long gridHash = PathfindingUtils.GetGridHash(grid);
-        var cacheKey = (gridHash, startX, startY, endX, endY, smoothPath);
+        var cacheKey = (gridHash, startX, startY, endX, endY, smoothPath, findClosestIfBlocked);
         if (useCache && PathCache.TryGetValue(cacheKey, out var cachedResult))
         {
             return cachedResult;
         }
 
-        var pathResult = await CalculatePathAsync(grid, startX, startY, endX, endY, smoothPath);
+        var pathResult = await CalculatePathAsync(grid, startX, startY, endX, endY, smoothPath, findClosestIfBlocked);
 
         if (useCache)
         {
@@ -26,18 +26,17 @@ public class AStarPathfinder
         return pathResult;
     }
 
-    private Task<PathResult> CalculatePathAsync(int[,] grid, int startX, int startY, int endX, int endY, bool smoothPath)
+    private Task<PathResult> CalculatePathAsync(int[,] grid, int startX, int startY, int endX, int endY, bool smoothPath, bool findClosestIfBlocked)
     {
         return Task.Run(() =>
         {
             int height = grid.GetLength(0);
             int width = grid.GetLength(1);
 
-            // Input validation
             if (startX < 0 || startX >= width || startY < 0 || startY >= height ||
                 endX < 0 || endX >= width || endY < 0 || endY >= height)
             {
-                return new PathResult(new List<Node>(), 0); // Out of bounds
+                return new PathResult(new List<Node>(), 0);
             }
 
             var nodes = new Node[height, width];
@@ -52,9 +51,20 @@ public class AStarPathfinder
             var startNode = nodes[startY, startX];
             var endNode = nodes[endY, endX];
 
-            if (!startNode.IsWalkable || !endNode.IsWalkable)
+            if (!startNode.IsWalkable) return new PathResult(new List<Node>(), 0);
+
+            if (!endNode.IsWalkable)
             {
-                return new PathResult(new List<Node>(), 0); // Start or end node is not walkable
+                if (findClosestIfBlocked)
+                {
+                    var nearestNode = FindNearestWalkableNode(nodes, startNode, endNode);
+                    if (nearestNode == null) return new PathResult(new List<Node>(), 0);
+                    endNode = nearestNode;
+                }
+                else
+                {
+                    return new PathResult(new List<Node>(), 0);
+                }
             }
 
             if (startNode == endNode) return new PathResult(new List<Node> { startNode }, 0);
@@ -82,10 +92,7 @@ public class AStarPathfinder
 
                 foreach (var neighbor in GetNeighbors(nodes, currentNode))
                 {
-                    if (!neighbor.IsWalkable || closedSet.Contains(neighbor))
-                    {
-                        continue;
-                    }
+                    if (!neighbor.IsWalkable || closedSet.Contains(neighbor)) continue;
 
                     var newCostToNeighbor = currentNode.GCost + PathfindingUtils.GetDistance(currentNode, neighbor) + neighbor.MovementCost;
                     if (newCostToNeighbor < neighbor.GCost)
@@ -105,6 +112,54 @@ public class AStarPathfinder
 
             return pathResult;
         });
+    }
+
+    private Node FindNearestWalkableNode(Node[,] nodes, Node startNode, Node targetNode)
+    {
+        int maxRadius = Math.Max(nodes.GetLength(0), nodes.GetLength(1));
+        for (int radius = 1; radius < maxRadius; radius++)
+        {
+            var candidates = new List<Node>();
+            for (int y = -radius; y <= radius; y++)
+            {
+                for (int x = -radius; x <= radius; x++)
+                {
+                    if (Math.Abs(y) != radius && Math.Abs(x) != radius) continue;
+
+                    int checkX = targetNode.X + x;
+                    int checkY = targetNode.Y + y;
+
+                    if (checkX >= 0 && checkX < nodes.GetLength(1) && checkY >= 0 && checkY < nodes.GetLength(0))
+                    {
+                        Node candidateNode = nodes[checkY, checkX];
+                        if (candidateNode.IsWalkable && candidateNode != startNode)
+                        {
+                            candidates.Add(candidateNode);
+                        }
+                    }
+                }
+            }
+
+            if (candidates.Any())
+            {
+                Node bestNode = null;
+                int bestDistance = int.MaxValue;
+                foreach (var candidate in candidates)
+                {
+                    int distance = PathfindingUtils.GetDistance(startNode, candidate);
+                    if (distance < bestDistance)
+                    {
+                        bestDistance = distance;
+                        bestNode = candidate;
+                    }
+                }
+                if (bestNode != null)
+                {
+                    return bestNode;
+                }
+            }
+        }
+        return null;
     }
 
     private static List<Node> RetracePath(Node startNode, Node endNode)
@@ -135,28 +190,21 @@ public class AStarPathfinder
         {
             for (int xOffset = -1; xOffset <= 1; xOffset++)
             {
-                if (xOffset == 0 && yOffset == 0)
-                    continue;
+                if (xOffset == 0 && yOffset == 0) continue;
 
                 int checkY = node.Y + yOffset;
                 int checkX = node.X + xOffset;
 
                 if (checkY >= 0 && checkY < height && checkX >= 0 && checkX < width)
                 {
-                    // Prevent cutting corners
                     if (Math.Abs(xOffset) == 1 && Math.Abs(yOffset) == 1)
                     {
-                        if (!nodes[node.Y, checkX].IsWalkable || !nodes[checkY, node.X].IsWalkable)
-                        {
-                            continue;
-                        }
+                        if (!nodes[node.Y, checkX].IsWalkable || !nodes[checkY, node.X].IsWalkable) continue;
                     }
                     neighbors.Add(nodes[checkY, checkX]);
                 }
             }
         }
-
         return neighbors;
     }
-
 }
