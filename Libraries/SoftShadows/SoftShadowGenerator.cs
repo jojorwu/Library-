@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 namespace SoftShadows;
 
 /// <summary>
@@ -23,7 +21,7 @@ public class SoftShadowGenerator
 
         int kernelRadius = filterSize / 2;
 
-        Parallel.For(0, height, y =>
+        for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
@@ -52,7 +50,7 @@ public class SoftShadowGenerator
 
                 softShadowMap[x, y] = 1.0f - (shadowFactor / samples);
             }
-        });
+        }
 
         return softShadowMap;
     }
