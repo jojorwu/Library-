@@ -1,0 +1,19 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:GitHubReleaseDownloader.GUI.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+             x:Class="GitHubReleaseDownloader.GUI.Views.MainView"
+             x:DataType="vm:MainViewModel">
+  <Design.DataContext>
+    <vm:MainViewModel />
+  </Design.DataContext>
+
+  <StackPanel Spacing="10" Margin="20">
+    <TextBlock Text="GitHub Repository URL:"/>
+    <TextBox Text="{Binding RepositoryUrl}" Watermark="https://github.com/owner/repo"/>
+    <Button Content="Download and Install" Command="{Binding DownloadCommand}"/>
+    <TextBlock Text="{Binding Status}" TextWrapping="Wrap"/>
+  </StackPanel>
+</UserControl>
