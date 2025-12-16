@@ -8,6 +8,8 @@ using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
 using MessageBox.Avalonia;
 using MessageBox.Avalonia.Enums;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace GitHubReleaseDownloader.GUI.ViewModels
 {
@@ -28,7 +30,14 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
         [ObservableProperty]
         private bool _isIdle = true;
 
+        [ObservableProperty]
+        private IReadOnlyList<IReleaseAsset> _assets;
+
+        [ObservableProperty]
+        private IReleaseAsset _selectedAsset;
+
         private readonly Downloader _downloader;
+        private readonly SettingsService _settingsService;
         private CancellationTokenSource _cancellationTokenSource;
 
         public MainViewModel()
@@ -41,6 +50,30 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
                 var messageBox = MessageBoxManager.GetMessageBoxStandardWindow("Error", message, ButtonEnum.Ok, Icon.Error);
                 messageBox.Show();
             };
+
+            _settingsService = new SettingsService();
+            var settings = _settingsService.LoadSettings();
+            RepositoryUrl = settings.RepositoryUrl;
+            DestinationPath = settings.DestinationPath;
+
+            PropertyChanged += (sender, e) =>
+            {
+                if (e.PropertyName == nameof(RepositoryUrl) || e.PropertyName == nameof(DestinationPath))
+                {
+                    _settingsService.SaveSettings(new Settings
+                    {
+                        RepositoryUrl = RepositoryUrl,
+                        DestinationPath = DestinationPath
+                    });
+                }
+            };
+        }
+
+        [RelayCommand]
+        private async Task FetchAssetsAsync()
+        {
+            Assets = await _downloader.GetReleaseAssetsAsync(RepositoryUrl);
+            SelectedAsset = Assets.FirstOrDefault();
         }
 
         [RelayCommand]
@@ -48,7 +81,7 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
         {
             IsIdle = false;
             _cancellationTokenSource = new CancellationTokenSource();
-            await _downloader.DownloadAndExtractRelease(RepositoryUrl, DestinationPath, _cancellationTokenSource.Token);
+            await _downloader.DownloadAndExtractRelease(SelectedAsset, DestinationPath, _cancellationTokenSource.Token);
             IsIdle = true;
         }
 

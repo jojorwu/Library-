@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -22,14 +23,12 @@ namespace GitHubReleaseDownloader.Core
             HttpClient = new HttpClient();
         }
 
-        public async Task DownloadAndExtractRelease(string repositoryUrl, string destinationPath, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyList<IReleaseAsset>> GetReleaseAssetsAsync(string repositoryUrl)
         {
             try
             {
                 OnStatusChanged("Parsing repository URL...");
                 var (owner, repo) = ParseRepoUrl(repositoryUrl);
-
-                cancellationToken.ThrowIfCancellationRequested();
 
                 OnStatusChanged("Connecting to GitHub...");
                 var releases = await GitHubClient.Release.GetAll(owner, repo);
@@ -38,25 +37,29 @@ namespace GitHubReleaseDownloader.Core
                 if (latestRelease == null)
                 {
                     OnErrorOccurred("No releases found for this repository.");
-                    return;
+                    return new List<IReleaseAsset>();
                 }
 
-                cancellationToken.ThrowIfCancellationRequested();
+                return latestRelease.Assets;
+            }
+            catch (Exception ex)
+            {
+                OnErrorOccurred($"An unexpected error occurred: {ex.Message}");
+                return new List<IReleaseAsset>();
+            }
+        }
 
-                var zipAsset = latestRelease.Assets.FirstOrDefault(a => a.Name.EndsWith(".zip"));
-                if (zipAsset == null)
-                {
-                    OnErrorOccurred("No .zip asset found in the latest release.");
-                    return;
-                }
-
-                OnStatusChanged($"Downloading {zipAsset.Name}...");
-                using (var response = await HttpClient.GetAsync(zipAsset.BrowserDownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+        public async Task DownloadAndExtractRelease(IReleaseAsset asset, string destinationPath, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                OnStatusChanged($"Downloading {asset.Name}...");
+                using (var response = await HttpClient.GetAsync(asset.BrowserDownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
                 {
                     response.EnsureSuccessStatusCode();
 
                     var totalBytes = response.Content.Headers.ContentLength;
-                    var zipPath = Path.Combine(Path.GetTempPath(), zipAsset.Name);
+                    var zipPath = Path.Combine(Path.GetTempPath(), asset.Name);
 
                     using (var contentStream = await response.Content.ReadAsStreamAsync())
                     using (var fileStream = new FileStream(zipPath, System.IO.FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
@@ -85,10 +88,10 @@ namespace GitHubReleaseDownloader.Core
                 }
 
                 OnStatusChanged($"Extracting to {destinationPath}...");
-                ZipFile.ExtractToDirectory(Path.Combine(Path.GetTempPath(), zipAsset.Name), destinationPath);
+                ZipFile.ExtractToDirectory(Path.Combine(Path.GetTempPath(), asset.Name), destinationPath);
                 OnStatusChanged("Extraction complete.");
 
-                File.Delete(Path.Combine(Path.GetTempPath(), zipAsset.Name));
+                File.Delete(Path.Combine(Path.GetTempPath(), asset.Name));
                 OnStatusChanged("Cleaned up temporary files.");
             }
             catch (OperationCanceledException)

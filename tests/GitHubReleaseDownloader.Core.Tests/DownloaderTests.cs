@@ -72,21 +72,45 @@ namespace GitHubReleaseDownloader.Core.Tests
         }
 
         [Test]
-        public async Task DownloadAndExtractRelease_ValidUrl_DownloadsAndExtracts()
+        public async Task GetReleaseAssetsAsync_ReleaseFound_ReturnsAssets()
+        {
+            // Arrange
+            var assetMock1 = new Mock<IReleaseAsset>();
+            var assetMock2 = new Mock<IReleaseAsset>();
+            var releaseMock = new Mock<IRelease>();
+            releaseMock.Setup(r => r.Assets).Returns(new List<IReleaseAsset> { assetMock1.Object, assetMock2.Object });
+            _releasesClientMock.Setup(r => r.GetAll("owner", "repo")).ReturnsAsync(new List<IRelease> { releaseMock.Object });
+
+            // Act
+            var assets = await _downloader.GetReleaseAssetsAsync("https://github.com/owner/repo");
+
+            // Assert
+            Assert.That(assets.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public async Task GetReleaseAssetsAsync_NoReleases_ReturnsEmptyList()
+        {
+            // Arrange
+            _releasesClientMock.Setup(r => r.GetAll("owner", "repo")).ReturnsAsync(new List<IRelease>());
+
+            // Act
+            var assets = await _downloader.GetReleaseAssetsAsync("https://github.com/owner/repo");
+
+            // Assert
+            Assert.That(assets, Is.Empty);
+        }
+
+        [Test]
+        public async Task DownloadAndExtractRelease_ValidAsset_DownloadsAndExtracts()
         {
             // Arrange
             var assetMock = new Mock<IReleaseAsset>();
             assetMock.Setup(a => a.BrowserDownloadUrl).Returns("http://example.com/asset.zip");
             assetMock.Setup(a => a.Name).Returns("asset.zip");
 
-            var releaseMock = new Mock<IRelease>();
-            releaseMock.Setup(r => r.Assets).Returns(new List<IReleaseAsset> { assetMock.Object });
-
-            _releasesClientMock.Setup(r => r.GetAll("owner", "repo"))
-                .ReturnsAsync(new List<IRelease> { releaseMock.Object });
-
             // Act
-            await _downloader.DownloadAndExtractRelease("https://github.com/owner/repo", _tempDirectory);
+            await _downloader.DownloadAndExtractRelease(assetMock.Object, _tempDirectory);
 
             // Assert
             var extractedFiles = Directory.GetFiles(_tempDirectory, "*", SearchOption.AllDirectories);

@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:GitHubReleaseDownloader.GUI.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="250"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="300"
              x:Class="GitHubReleaseDownloader.GUI.Views.MainView"
              x:DataType="vm:MainViewModel">
   <Design.DataContext>
@@ -12,7 +12,13 @@
 
   <StackPanel Spacing="10" Margin="20">
     <TextBlock Text="GitHub Repository URL:"/>
-    <TextBox Text="{Binding RepositoryUrl}" Watermark="https://github.com/owner/repo" IsEnabled="{Binding IsIdle}"/>
+    <Grid ColumnDefinitions="*,Auto">
+        <TextBox Grid.Column="0" Text="{Binding RepositoryUrl}" Watermark="https://github.com/owner/repo" IsEnabled="{Binding IsIdle}"/>
+        <Button Grid.Column="1" Content="Fetch Assets" Command="{Binding FetchAssetsCommand}" IsEnabled="{Binding IsIdle}"/>
+    </Grid>
+
+    <TextBlock Text="Asset:"/>
+    <ComboBox ItemsSource="{Binding Assets}" SelectedItem="{Binding SelectedAsset}" DisplayMemberBinding="{Binding Name}" IsEnabled="{Binding IsIdle}"/>
 
     <TextBlock Text="Destination Path:"/>
     <Grid ColumnDefinitions="*,Auto">
@@ -20,7 +26,7 @@
       <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseCommand}" IsEnabled="{Binding IsIdle}"/>
     </Grid>
 
-    <Button Content="Download and Install" Command="{Binding DownloadCommand}" IsVisible="{Binding IsIdle}"/>
+    <Button Content="Download and Install" Command="{Binding DownloadCommand}" IsVisible="{Binding IsIdle}" IsEnabled="{Binding SelectedAsset, Converter={x:Static ObjectConverters.IsNotNull}}"/>
     <Button Content="Cancel" Command="{Binding CancelCommand}" IsVisible="{Binding !IsIdle}"/>
     <ProgressBar Value="{Binding Progress}" Maximum="1.0"/>
     <TextBlock Text="{Binding Status}" TextWrapping="Wrap"/>
