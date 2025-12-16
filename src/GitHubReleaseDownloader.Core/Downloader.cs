@@ -4,15 +4,23 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Octokit;
 
 namespace GitHubReleaseDownloader.Core
 {
     public class Downloader
     {
+        public IGitHubClient GitHubClient { get; set; }
+        public HttpClient HttpClient { get; set; }
         public event Action<string>? StatusChanged;
+        public event Action<double>? ProgressChanged;
 
-        public async Task DownloadAndExtractRelease(string repositoryUrl)
+        public Downloader()
+        {
+            GitHubClient = new OctokitGitHubClient("GitHubReleaseDownloader");
+            HttpClient = new HttpClient();
+        }
+
+        public async Task DownloadAndExtractRelease(string repositoryUrl, string destinationPath)
         {
             try
             {
@@ -20,8 +28,7 @@ namespace GitHubReleaseDownloader.Core
                 var (owner, repo) = ParseRepoUrl(repositoryUrl);
 
                 OnStatusChanged("Connecting to GitHub...");
-                var github = new GitHubClient(new ProductHeaderValue("GitHubReleaseDownloader"));
-                var releases = await github.Repository.Release.GetAll(owner, repo);
+                var releases = await GitHubClient.Release.GetAll(owner, repo);
                 var latestRelease = releases.FirstOrDefault();
 
                 if (latestRelease == null)
@@ -38,33 +45,43 @@ namespace GitHubReleaseDownloader.Core
                 }
 
                 OnStatusChanged($"Downloading {zipAsset.Name}...");
-                var httpClient = new HttpClient();
-                var response = await httpClient.GetAsync(zipAsset.BrowserDownloadUrl);
-                response.EnsureSuccessStatusCode();
-
-                var zipPath = Path.Combine(Path.GetTempPath(), zipAsset.Name);
-                using (var fs = new FileStream(zipPath, System.IO.FileMode.Create))
+                using (var response = await HttpClient.GetAsync(zipAsset.BrowserDownloadUrl, HttpCompletionOption.ResponseHeadersRead))
                 {
-                    await response.Content.CopyToAsync(fs);
+                    response.EnsureSuccessStatusCode();
+
+                    var totalBytes = response.Content.Headers.ContentLength;
+                    var zipPath = Path.Combine(Path.GetTempPath(), zipAsset.Name);
+
+                    using (var contentStream = await response.Content.ReadAsStreamAsync())
+                    using (var fileStream = new FileStream(zipPath, System.IO.FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
+                    {
+                        var buffer = new byte[8192];
+                        long totalBytesRead = 0;
+                        int bytesRead;
+                        while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                        {
+                            await fileStream.WriteAsync(buffer, 0, bytesRead);
+                            totalBytesRead += bytesRead;
+                            if (totalBytes.HasValue)
+                            {
+                                OnProgressChanged((double)totalBytesRead / totalBytes.Value);
+                            }
+                        }
+                    }
                 }
                 OnStatusChanged("Download complete.");
 
-                var extractPath = Path.Combine(Directory.GetCurrentDirectory(), Path.GetFileNameWithoutExtension(zipAsset.Name));
-                if(Directory.Exists(extractPath))
+                if (Directory.Exists(destinationPath))
                 {
-                    Directory.Delete(extractPath, true);
+                    Directory.Delete(destinationPath, true);
                 }
 
-                OnStatusChanged($"Extracting to {extractPath}...");
-                ZipFile.ExtractToDirectory(zipPath, extractPath);
+                OnStatusChanged($"Extracting to {destinationPath}...");
+                ZipFile.ExtractToDirectory(Path.Combine(Path.GetTempPath(), zipAsset.Name), destinationPath);
                 OnStatusChanged("Extraction complete.");
 
-                File.Delete(zipPath);
+                File.Delete(Path.Combine(Path.GetTempPath(), zipAsset.Name));
                 OnStatusChanged("Cleaned up temporary files.");
-            }
-            catch (ApiException ex)
-            {
-                OnStatusChanged($"Error interacting with the GitHub API: {ex.Message}");
             }
             catch (HttpRequestException ex)
             {
@@ -81,7 +98,12 @@ namespace GitHubReleaseDownloader.Core
             StatusChanged?.Invoke(status);
         }
 
-        private (string owner, string repo) ParseRepoUrl(string url)
+        private void OnProgressChanged(double progress)
+        {
+            ProgressChanged?.Invoke(progress);
+        }
+
+        public (string owner, string repo) ParseRepoUrl(string url)
         {
             var uri = new Uri(url);
             var segments = uri.AbsolutePath.Trim('/').Split('/');
