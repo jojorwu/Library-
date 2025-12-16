@@ -11,6 +11,7 @@ using MessageBox.Avalonia.Enums;
 using System.Collections.Generic;
 using System.Linq;
 using System;
+using System.Diagnostics;
 
 namespace GitHubReleaseDownloader.GUI.ViewModels
 {
@@ -37,6 +38,12 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
         [ObservableProperty]
         private IReleaseAsset _selectedAsset;
 
+        [ObservableProperty]
+        private bool _isUrlValid;
+
+        [ObservableProperty]
+        private bool _downloadComplete;
+
         private readonly GitHubService _githubService;
         private readonly FileDownloaderService _fileDownloaderService;
         private readonly SettingsService _settingsService;
@@ -57,13 +64,9 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
 
             PropertyChanged += (sender, e) =>
             {
-                if (e.PropertyName == nameof(RepositoryUrl) || e.PropertyName == nameof(DestinationPath))
+                if (e.PropertyName == nameof(RepositoryUrl))
                 {
-                    _settingsService.SaveSettings(new Settings
-                    {
-                        RepositoryUrl = RepositoryUrl,
-                        DestinationPath = DestinationPath
-                    });
+                    IsUrlValid = Uri.TryCreate(RepositoryUrl, UriKind.Absolute, out var uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
                 }
             };
         }
@@ -71,6 +74,7 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
         [RelayCommand]
         private async Task FetchAssetsAsync()
         {
+            DownloadComplete = false;
             try
             {
                 Assets = await _githubService.GetReleaseAssetsAsync(RepositoryUrl);
@@ -87,10 +91,12 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
         private async Task DownloadAsync()
         {
             IsIdle = false;
+            DownloadComplete = false;
             _cancellationTokenSource = new CancellationTokenSource();
             try
             {
                 await _fileDownloaderService.DownloadAndExtractAsset(SelectedAsset, DestinationPath, _cancellationTokenSource.Token);
+                DownloadComplete = true;
             }
             catch(Exception ex)
             {
@@ -122,6 +128,16 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
                     DestinationPath = result[0].Path.LocalPath;
                 }
             }
+        }
+
+        [RelayCommand]
+        private void OpenFolder()
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = DestinationPath,
+                UseShellExecute = true
+            });
         }
     }
 }

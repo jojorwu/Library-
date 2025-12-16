@@ -10,8 +10,10 @@ The GUI application provides a user-friendly interface for downloading and extra
 
 *   **Download and Extract:** Downloads and extracts a selected release asset from a GitHub repository.
 *   **Asset Selection:** Fetches and displays a list of available assets for the latest release.
+*   **URL Validation:** The "Fetch Assets" button is disabled until a valid URL is entered.
 *   **Progress Bar:** Displays the progress of the download.
 *   **Custom Destination:** Allows you to select a custom destination folder for the extracted files.
+*   **Open Folder:** Allows you to open the destination folder after a successful download.
 *   **Persistent Settings:** Remembers the last-used repository URL and destination path.
 *   **Graceful Cancellation:** Allows you to cancel the download and extraction process.
 *   **UI Feedback:** Disables the UI during a download to prevent multiple operations.
@@ -21,11 +23,12 @@ The GUI application provides a user-friendly interface for downloading and extra
 
 1.  Download the latest `GitHubReleaseDownloader.GUI.exe` from the [releases page](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY/releases).
 2.  Run the executable.
-3.  Enter the URL of the GitHub repository and click "Fetch Assets".
+3.  Enter a valid GitHub repository URL and click "Fetch Assets".
 4.  Select the desired asset from the dropdown menu.
 5.  (Optional) Click the "Browse..." button to select a custom destination folder.
 6.  Click the "Download and Install" button.
 7.  (Optional) Click the "Cancel" button to stop the download.
+8.  (Optional) Click the "Open Folder" button to open the destination folder.
 
 The application will download the selected asset, extract it to the specified directory, and clean up the downloaded file.
 

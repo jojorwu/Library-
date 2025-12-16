@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using GitHubReleaseDownloader.Core;
 using GitHubReleaseDownloader.GUI.ViewModels;
 using GitHubReleaseDownloader.GUI.Views;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,6 +31,17 @@ namespace GitHubReleaseDownloader.GUI
                 {
                     DataContext = Services.GetRequiredService<MainViewModel>(),
                 };
+
+                desktop.ShutdownRequested += (sender, e) =>
+                {
+                    var mainViewModel = Services.GetRequiredService<MainViewModel>();
+                    var settingsService = Services.GetRequiredService<SettingsService>();
+                    settingsService.SaveSettings(new Settings
+                    {
+                        RepositoryUrl = mainViewModel.RepositoryUrl,
+                        DestinationPath = mainViewModel.DestinationPath
+                    });
+                };
             }
 
             base.OnFrameworkInitializationCompleted();
@@ -37,11 +49,11 @@ namespace GitHubReleaseDownloader.GUI
 
         private void ConfigureServices(IServiceCollection services)
         {
-            services.AddSingleton<Core.IGitHubClient>(new Core.OctokitGitHubClient("GitHubReleaseDownloader"));
+            services.AddSingleton<IGitHubClient>(new OctokitGitHubClient("GitHubReleaseDownloader"));
             services.AddSingleton<HttpClient>();
-            services.AddTransient<Core.GitHubService>();
-            services.AddTransient<Core.FileDownloaderService>();
-            services.AddSingleton<Core.SettingsService>();
+            services.AddTransient<GitHubService>();
+            services.AddTransient<FileDownloaderService>();
+            services.AddSingleton<SettingsService>();
             services.AddSingleton<MainViewModel>();
         }
     }
