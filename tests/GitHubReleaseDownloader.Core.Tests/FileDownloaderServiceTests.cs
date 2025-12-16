@@ -8,30 +8,22 @@ using System.Linq;
 using System.Net.Http;
 using Moq.Protected;
 using System.Threading;
-using System.Collections.Generic;
 
 namespace GitHubReleaseDownloader.Core.Tests
 {
     [TestFixture]
-    public class DownloaderTests
+    public class FileDownloaderServiceTests
     {
-        private Downloader _downloader;
-        private Mock<IGitHubClient> _githubClientMock;
-        private Mock<IReleaseClient> _releasesClientMock;
+        private FileDownloaderService _fileDownloaderService;
         private string _tempDirectory;
         private string _zipPath;
 
         [SetUp]
         public void Setup()
         {
-            _githubClientMock = new Mock<IGitHubClient>();
-            _releasesClientMock = new Mock<IReleaseClient>();
-            _githubClientMock.Setup(c => c.Release).Returns(_releasesClientMock.Object);
-
             var mockMessageHandler = new Mock<HttpMessageHandler>();
             var httpClient = new HttpClient(mockMessageHandler.Object);
-
-            _downloader = new Downloader { GitHubClient = _githubClientMock.Object, HttpClient = httpClient };
+            _fileDownloaderService = new FileDownloaderService(httpClient);
 
             _tempDirectory = Path.Combine(Path.GetTempPath(), "DownloaderTests");
             Directory.CreateDirectory(_tempDirectory);
@@ -72,37 +64,7 @@ namespace GitHubReleaseDownloader.Core.Tests
         }
 
         [Test]
-        public async Task GetReleaseAssetsAsync_ReleaseFound_ReturnsAssets()
-        {
-            // Arrange
-            var assetMock1 = new Mock<IReleaseAsset>();
-            var assetMock2 = new Mock<IReleaseAsset>();
-            var releaseMock = new Mock<IRelease>();
-            releaseMock.Setup(r => r.Assets).Returns(new List<IReleaseAsset> { assetMock1.Object, assetMock2.Object });
-            _releasesClientMock.Setup(r => r.GetAll("owner", "repo")).ReturnsAsync(new List<IRelease> { releaseMock.Object });
-
-            // Act
-            var assets = await _downloader.GetReleaseAssetsAsync("https://github.com/owner/repo");
-
-            // Assert
-            Assert.That(assets.Count, Is.EqualTo(2));
-        }
-
-        [Test]
-        public async Task GetReleaseAssetsAsync_NoReleases_ReturnsEmptyList()
-        {
-            // Arrange
-            _releasesClientMock.Setup(r => r.GetAll("owner", "repo")).ReturnsAsync(new List<IRelease>());
-
-            // Act
-            var assets = await _downloader.GetReleaseAssetsAsync("https://github.com/owner/repo");
-
-            // Assert
-            Assert.That(assets, Is.Empty);
-        }
-
-        [Test]
-        public async Task DownloadAndExtractRelease_ValidAsset_DownloadsAndExtracts()
+        public async Task DownloadAndExtractAsset_ValidAsset_DownloadsAndExtracts()
         {
             // Arrange
             var assetMock = new Mock<IReleaseAsset>();
@@ -110,22 +72,11 @@ namespace GitHubReleaseDownloader.Core.Tests
             assetMock.Setup(a => a.Name).Returns("asset.zip");
 
             // Act
-            await _downloader.DownloadAndExtractRelease(assetMock.Object, _tempDirectory);
+            await _fileDownloaderService.DownloadAndExtractAsset(assetMock.Object, _tempDirectory);
 
             // Assert
             var extractedFiles = Directory.GetFiles(_tempDirectory, "*", SearchOption.AllDirectories);
             Assert.That(extractedFiles.Any(f => f.EndsWith("test.txt")));
-        }
-
-        [Test]
-        public void ParseRepoUrl_ValidUrl_ReturnsOwnerAndRepo()
-        {
-            // Act
-            var (owner, repo) = _downloader.ParseRepoUrl("https://github.com/owner/repo");
-
-            // Assert
-            Assert.That(owner, Is.EqualTo("owner"));
-            Assert.That(repo, Is.EqualTo("repo"));
         }
     }
 }

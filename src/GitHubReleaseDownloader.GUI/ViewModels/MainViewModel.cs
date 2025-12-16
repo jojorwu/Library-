@@ -10,6 +10,7 @@ using MessageBox.Avalonia;
 using MessageBox.Avalonia.Enums;
 using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace GitHubReleaseDownloader.GUI.ViewModels
 {
@@ -36,22 +37,20 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
         [ObservableProperty]
         private IReleaseAsset _selectedAsset;
 
-        private readonly Downloader _downloader;
+        private readonly GitHubService _githubService;
+        private readonly FileDownloaderService _fileDownloaderService;
         private readonly SettingsService _settingsService;
         private CancellationTokenSource _cancellationTokenSource;
 
-        public MainViewModel()
+        public MainViewModel(GitHubService githubService, FileDownloaderService fileDownloaderService, SettingsService settingsService)
         {
-            _downloader = new Downloader();
-            _downloader.StatusChanged += (message) => Status = message;
-            _downloader.ProgressChanged += (progress) => Progress = progress;
-            _downloader.ErrorOccurred += (message) =>
-            {
-                var messageBox = MessageBoxManager.GetMessageBoxStandardWindow("Error", message, ButtonEnum.Ok, Icon.Error);
-                messageBox.Show();
-            };
+            _githubService = githubService;
+            _fileDownloaderService = fileDownloaderService;
+            _settingsService = settingsService;
 
-            _settingsService = new SettingsService();
+            _fileDownloaderService.StatusChanged += (message) => Status = message;
+            _fileDownloaderService.ProgressChanged += (progress) => Progress = progress;
+
             var settings = _settingsService.LoadSettings();
             RepositoryUrl = settings.RepositoryUrl;
             DestinationPath = settings.DestinationPath;
@@ -72,8 +71,16 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
         [RelayCommand]
         private async Task FetchAssetsAsync()
         {
-            Assets = await _downloader.GetReleaseAssetsAsync(RepositoryUrl);
-            SelectedAsset = Assets.FirstOrDefault();
+            try
+            {
+                Assets = await _githubService.GetReleaseAssetsAsync(RepositoryUrl);
+                SelectedAsset = Assets.FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                var messageBox = MessageBoxManager.GetMessageBoxStandardWindow("Error", ex.Message, ButtonEnum.Ok, Icon.Error);
+                messageBox.Show();
+            }
         }
 
         [RelayCommand]
@@ -81,7 +88,15 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
         {
             IsIdle = false;
             _cancellationTokenSource = new CancellationTokenSource();
-            await _downloader.DownloadAndExtractRelease(SelectedAsset, DestinationPath, _cancellationTokenSource.Token);
+            try
+            {
+                await _fileDownloaderService.DownloadAndExtractAsset(SelectedAsset, DestinationPath, _cancellationTokenSource.Token);
+            }
+            catch(Exception ex)
+            {
+                var messageBox = MessageBoxManager.GetMessageBoxStandardWindow("Error", ex.Message, ButtonEnum.Ok, Icon.Error);
+                messageBox.Show();
+            }
             IsIdle = true;
         }
 

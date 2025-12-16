@@ -49,7 +49,7 @@ The CLI tool provides a command-line interface for downloading and extracting re
 
 ### Usage
 
-To use the tool, you need to provide the URL of the GitHub repository.
+To use the tool, you need to provide the URL of the GitHub repository. The tool will then fetch the available assets and prompt you to select one.
 
 ```bash
 dotnet run --project src/GitHubReleaseDownloader.Console -- -r <repository_url> -o <output_directory>
