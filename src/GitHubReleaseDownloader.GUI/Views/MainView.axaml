@@ -3,7 +3,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:vm="using:GitHubReleaseDownloader.GUI.ViewModels"
-             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+             mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="250"
              x:Class="GitHubReleaseDownloader.GUI.Views.MainView"
              x:DataType="vm:MainViewModel">
   <Design.DataContext>
@@ -13,7 +13,15 @@
   <StackPanel Spacing="10" Margin="20">
     <TextBlock Text="GitHub Repository URL:"/>
     <TextBox Text="{Binding RepositoryUrl}" Watermark="https://github.com/owner/repo"/>
+
+    <TextBlock Text="Destination Path:"/>
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBox Grid.Column="0" Text="{Binding DestinationPath}" IsReadOnly="True"/>
+      <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseCommand}"/>
+    </Grid>
+
     <Button Content="Download and Install" Command="{Binding DownloadCommand}"/>
+    <ProgressBar Value="{Binding Progress}" Maximum="1.0"/>
     <TextBlock Text="{Binding Status}" TextWrapping="Wrap"/>
   </StackPanel>
 </UserControl>

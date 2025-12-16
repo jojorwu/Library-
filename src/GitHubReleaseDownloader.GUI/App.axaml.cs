@@ -1,23 +1,29 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using GitHubReleaseDownloader.GUI.ViewModels;
+using GitHubReleaseDownloader.GUI.Views;
 
-namespace GitHubReleaseDownloader.GUI;
-
-public partial class App : Application
+namespace GitHubReleaseDownloader.GUI
 {
-    public override void Initialize()
+    public partial class App : Application
     {
-        AvaloniaXamlLoader.Load(this);
-    }
-
-    public override void OnFrameworkInitializationCompleted()
-    {
-        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        public override void Initialize()
         {
-            desktop.MainWindow = new MainWindow();
+            AvaloniaXamlLoader.Load(this);
         }
 
-        base.OnFrameworkInitializationCompleted();
+        public override void OnFrameworkInitializationCompleted()
+        {
+            if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                desktop.MainWindow = new MainWindow
+                {
+                    DataContext = new MainViewModel(),
+                };
+            }
+
+            base.OnFrameworkInitializationCompleted();
+        }
     }
 }
