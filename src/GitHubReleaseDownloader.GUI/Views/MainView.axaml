@@ -12,15 +12,16 @@
 
   <StackPanel Spacing="10" Margin="20">
     <TextBlock Text="GitHub Repository URL:"/>
-    <TextBox Text="{Binding RepositoryUrl}" Watermark="https://github.com/owner/repo"/>
+    <TextBox Text="{Binding RepositoryUrl}" Watermark="https://github.com/owner/repo" IsEnabled="{Binding IsIdle}"/>
 
     <TextBlock Text="Destination Path:"/>
     <Grid ColumnDefinitions="*,Auto">
       <TextBox Grid.Column="0" Text="{Binding DestinationPath}" IsReadOnly="True"/>
-      <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseCommand}"/>
+      <Button Grid.Column="1" Content="Browse..." Command="{Binding BrowseCommand}" IsEnabled="{Binding IsIdle}"/>
     </Grid>
 
-    <Button Content="Download and Install" Command="{Binding DownloadCommand}"/>
+    <Button Content="Download and Install" Command="{Binding DownloadCommand}" IsVisible="{Binding IsIdle}"/>
+    <Button Content="Cancel" Command="{Binding CancelCommand}" IsVisible="{Binding !IsIdle}"/>
     <ProgressBar Value="{Binding Progress}" Maximum="1.0"/>
     <TextBlock Text="{Binding Status}" TextWrapping="Wrap"/>
   </StackPanel>

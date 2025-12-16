@@ -11,6 +11,9 @@ The GUI application provides a user-friendly interface for downloading and extra
 *   **Download and Extract:** Downloads and extracts the latest release from a GitHub repository.
 *   **Progress Bar:** Displays the progress of the download.
 *   **Custom Destination:** Allows you to select a custom destination folder for the extracted files.
+*   **Graceful Cancellation:** Allows you to cancel the download and extraction process.
+*   **UI Feedback:** Disables the UI during a download to prevent multiple operations.
+*   **Error Reporting:** Displays error messages in modal dialogs.
 
 ### Usage
 
@@ -19,6 +22,7 @@ The GUI application provides a user-friendly interface for downloading and extra
 3.  Enter the URL of the GitHub repository.
 4.  (Optional) Click the "Browse..." button to select a custom destination folder.
 5.  Click the "Download and Install" button.
+6.  (Optional) Click the "Cancel" button to stop the download.
 
 The application will download the latest release, extract it to the specified directory, and clean up the downloaded zip file.
 

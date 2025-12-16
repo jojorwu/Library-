@@ -2,9 +2,12 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using GitHubReleaseDownloader.Core;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Platform.Storage;
+using MessageBox.Avalonia;
+using MessageBox.Avalonia.Enums;
 
 namespace GitHubReleaseDownloader.GUI.ViewModels
 {
@@ -22,19 +25,37 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
         [ObservableProperty]
         private double _progress;
 
+        [ObservableProperty]
+        private bool _isIdle = true;
+
         private readonly Downloader _downloader;
+        private CancellationTokenSource _cancellationTokenSource;
 
         public MainViewModel()
         {
             _downloader = new Downloader();
             _downloader.StatusChanged += (message) => Status = message;
             _downloader.ProgressChanged += (progress) => Progress = progress;
+            _downloader.ErrorOccurred += (message) =>
+            {
+                var messageBox = MessageBoxManager.GetMessageBoxStandardWindow("Error", message, ButtonEnum.Ok, Icon.Error);
+                messageBox.Show();
+            };
         }
 
         [RelayCommand]
         private async Task DownloadAsync()
         {
-            await _downloader.DownloadAndExtractRelease(RepositoryUrl, DestinationPath);
+            IsIdle = false;
+            _cancellationTokenSource = new CancellationTokenSource();
+            await _downloader.DownloadAndExtractRelease(RepositoryUrl, DestinationPath, _cancellationTokenSource.Token);
+            IsIdle = true;
+        }
+
+        [RelayCommand]
+        private void Cancel()
+        {
+            _cancellationTokenSource?.Cancel();
         }
 
         [RelayCommand]

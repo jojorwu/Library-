@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace GitHubReleaseDownloader.Core
@@ -13,6 +14,7 @@ namespace GitHubReleaseDownloader.Core
         public HttpClient HttpClient { get; set; }
         public event Action<string>? StatusChanged;
         public event Action<double>? ProgressChanged;
+        public event Action<string>? ErrorOccurred;
 
         public Downloader()
         {
@@ -20,12 +22,14 @@ namespace GitHubReleaseDownloader.Core
             HttpClient = new HttpClient();
         }
 
-        public async Task DownloadAndExtractRelease(string repositoryUrl, string destinationPath)
+        public async Task DownloadAndExtractRelease(string repositoryUrl, string destinationPath, CancellationToken cancellationToken = default)
         {
             try
             {
                 OnStatusChanged("Parsing repository URL...");
                 var (owner, repo) = ParseRepoUrl(repositoryUrl);
+
+                cancellationToken.ThrowIfCancellationRequested();
 
                 OnStatusChanged("Connecting to GitHub...");
                 var releases = await GitHubClient.Release.GetAll(owner, repo);
@@ -33,19 +37,21 @@ namespace GitHubReleaseDownloader.Core
 
                 if (latestRelease == null)
                 {
-                    OnStatusChanged("No releases found for this repository.");
+                    OnErrorOccurred("No releases found for this repository.");
                     return;
                 }
+
+                cancellationToken.ThrowIfCancellationRequested();
 
                 var zipAsset = latestRelease.Assets.FirstOrDefault(a => a.Name.EndsWith(".zip"));
                 if (zipAsset == null)
                 {
-                    OnStatusChanged("No .zip asset found in the latest release.");
+                    OnErrorOccurred("No .zip asset found in the latest release.");
                     return;
                 }
 
                 OnStatusChanged($"Downloading {zipAsset.Name}...");
-                using (var response = await HttpClient.GetAsync(zipAsset.BrowserDownloadUrl, HttpCompletionOption.ResponseHeadersRead))
+                using (var response = await HttpClient.GetAsync(zipAsset.BrowserDownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
                 {
                     response.EnsureSuccessStatusCode();
 
@@ -58,9 +64,9 @@ namespace GitHubReleaseDownloader.Core
                         var buffer = new byte[8192];
                         long totalBytesRead = 0;
                         int bytesRead;
-                        while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                        while ((bytesRead = await contentStream.ReadAsync(buffer, 0, buffer.Length, cancellationToken)) > 0)
                         {
-                            await fileStream.WriteAsync(buffer, 0, bytesRead);
+                            await fileStream.WriteAsync(buffer, 0, bytesRead, cancellationToken);
                             totalBytesRead += bytesRead;
                             if (totalBytes.HasValue)
                             {
@@ -70,6 +76,8 @@ namespace GitHubReleaseDownloader.Core
                     }
                 }
                 OnStatusChanged("Download complete.");
+
+                cancellationToken.ThrowIfCancellationRequested();
 
                 if (Directory.Exists(destinationPath))
                 {
@@ -83,13 +91,17 @@ namespace GitHubReleaseDownloader.Core
                 File.Delete(Path.Combine(Path.GetTempPath(), zipAsset.Name));
                 OnStatusChanged("Cleaned up temporary files.");
             }
+            catch (OperationCanceledException)
+            {
+                OnStatusChanged("Download canceled.");
+            }
             catch (HttpRequestException ex)
             {
-                OnStatusChanged($"Error downloading the release asset: {ex.Message}");
+                OnErrorOccurred($"Error downloading the release asset: {ex.Message}");
             }
             catch (Exception ex)
             {
-                OnStatusChanged($"An unexpected error occurred: {ex.Message}");
+                OnErrorOccurred($"An unexpected error occurred: {ex.Message}");
             }
         }
 
@@ -101,6 +113,11 @@ namespace GitHubReleaseDownloader.Core
         private void OnProgressChanged(double progress)
         {
             ProgressChanged?.Invoke(progress);
+        }
+
+        private void OnErrorOccurred(string message)
+        {
+            ErrorOccurred?.Invoke(message);
         }
 
         public (string owner, string repo) ParseRepoUrl(string url)
