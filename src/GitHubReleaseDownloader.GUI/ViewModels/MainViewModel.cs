@@ -10,6 +10,8 @@ using MessageBox.Avalonia;
 using MessageBox.Avalonia.Enums;
 using System.Collections.Generic;
 using System.Linq;
+using System;
+using System.Diagnostics;
 
 namespace GitHubReleaseDownloader.GUI.ViewModels
 {
@@ -36,35 +38,35 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
         [ObservableProperty]
         private IReleaseAsset _selectedAsset;
 
-        private readonly Downloader _downloader;
+        [ObservableProperty]
+        private bool _isUrlValid;
+
+        [ObservableProperty]
+        private bool _downloadComplete;
+
+        private readonly GitHubService _githubService;
+        private readonly FileDownloaderService _fileDownloaderService;
         private readonly SettingsService _settingsService;
         private CancellationTokenSource _cancellationTokenSource;
 
-        public MainViewModel()
+        public MainViewModel(GitHubService githubService, FileDownloaderService fileDownloaderService, SettingsService settingsService)
         {
-            _downloader = new Downloader();
-            _downloader.StatusChanged += (message) => Status = message;
-            _downloader.ProgressChanged += (progress) => Progress = progress;
-            _downloader.ErrorOccurred += (message) =>
-            {
-                var messageBox = MessageBoxManager.GetMessageBoxStandardWindow("Error", message, ButtonEnum.Ok, Icon.Error);
-                messageBox.Show();
-            };
+            _githubService = githubService;
+            _fileDownloaderService = fileDownloaderService;
+            _settingsService = settingsService;
 
-            _settingsService = new SettingsService();
+            _fileDownloaderService.StatusChanged += (message) => Status = message;
+            _fileDownloaderService.ProgressChanged += (progress) => Progress = progress;
+
             var settings = _settingsService.LoadSettings();
             RepositoryUrl = settings.RepositoryUrl;
             DestinationPath = settings.DestinationPath;
 
             PropertyChanged += (sender, e) =>
             {
-                if (e.PropertyName == nameof(RepositoryUrl) || e.PropertyName == nameof(DestinationPath))
+                if (e.PropertyName == nameof(RepositoryUrl))
                 {
-                    _settingsService.SaveSettings(new Settings
-                    {
-                        RepositoryUrl = RepositoryUrl,
-                        DestinationPath = DestinationPath
-                    });
+                    IsUrlValid = Uri.TryCreate(RepositoryUrl, UriKind.Absolute, out var uriResult) && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
                 }
             };
         }
@@ -72,16 +74,35 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
         [RelayCommand]
         private async Task FetchAssetsAsync()
         {
-            Assets = await _downloader.GetReleaseAssetsAsync(RepositoryUrl);
-            SelectedAsset = Assets.FirstOrDefault();
+            DownloadComplete = false;
+            try
+            {
+                Assets = await _githubService.GetReleaseAssetsAsync(RepositoryUrl);
+                SelectedAsset = Assets.FirstOrDefault();
+            }
+            catch (Exception ex)
+            {
+                var messageBox = MessageBoxManager.GetMessageBoxStandardWindow("Error", ex.Message, ButtonEnum.Ok, Icon.Error);
+                messageBox.Show();
+            }
         }
 
         [RelayCommand]
         private async Task DownloadAsync()
         {
             IsIdle = false;
+            DownloadComplete = false;
             _cancellationTokenSource = new CancellationTokenSource();
-            await _downloader.DownloadAndExtractRelease(SelectedAsset, DestinationPath, _cancellationTokenSource.Token);
+            try
+            {
+                await _fileDownloaderService.DownloadAndExtractAsset(SelectedAsset, DestinationPath, _cancellationTokenSource.Token);
+                DownloadComplete = true;
+            }
+            catch(Exception ex)
+            {
+                var messageBox = MessageBoxManager.GetMessageBoxStandardWindow("Error", ex.Message, ButtonEnum.Ok, Icon.Error);
+                messageBox.Show();
+            }
             IsIdle = true;
         }
 
@@ -107,6 +128,16 @@ namespace GitHubReleaseDownloader.GUI.ViewModels
                     DestinationPath = result[0].Path.LocalPath;
                 }
             }
+        }
+
+        [RelayCommand]
+        private void OpenFolder()
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = DestinationPath,
+                UseShellExecute = true
+            });
         }
     }
 }

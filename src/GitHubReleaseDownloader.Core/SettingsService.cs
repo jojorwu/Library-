@@ -21,7 +21,8 @@ namespace GitHubReleaseDownloader.Core
             if (File.Exists(_settingsFilePath))
             {
                 var json = File.ReadAllText(_settingsFilePath);
-                return JsonSerializer.Deserialize<Settings>(json);
+                var settings = JsonSerializer.Deserialize<Settings>(json);
+                return settings ?? new Settings();
             }
 
             return new Settings();

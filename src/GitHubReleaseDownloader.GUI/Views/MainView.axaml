@@ -14,7 +14,7 @@
     <TextBlock Text="GitHub Repository URL:"/>
     <Grid ColumnDefinitions="*,Auto">
         <TextBox Grid.Column="0" Text="{Binding RepositoryUrl}" Watermark="https://github.com/owner/repo" IsEnabled="{Binding IsIdle}"/>
-        <Button Grid.Column="1" Content="Fetch Assets" Command="{Binding FetchAssetsCommand}" IsEnabled="{Binding IsIdle}"/>
+        <Button Grid.Column="1" Content="Fetch Assets" Command="{Binding FetchAssetsCommand}" IsEnabled="{Binding IsUrlValid}"/>
     </Grid>
 
     <TextBlock Text="Asset:"/>
@@ -28,6 +28,7 @@
 
     <Button Content="Download and Install" Command="{Binding DownloadCommand}" IsVisible="{Binding IsIdle}" IsEnabled="{Binding SelectedAsset, Converter={x:Static ObjectConverters.IsNotNull}}"/>
     <Button Content="Cancel" Command="{Binding CancelCommand}" IsVisible="{Binding !IsIdle}"/>
+    <Button Content="Open Folder" Command="{Binding OpenFolderCommand}" IsVisible="{Binding DownloadComplete}"/>
     <ProgressBar Value="{Binding Progress}" Maximum="1.0"/>
     <TextBlock Text="{Binding Status}" TextWrapping="Wrap"/>
   </StackPanel>

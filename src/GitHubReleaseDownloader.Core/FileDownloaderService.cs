@@ -1,60 +1,30 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace GitHubReleaseDownloader.Core
 {
-    public class Downloader
+    public class FileDownloaderService
     {
-        public IGitHubClient GitHubClient { get; set; }
-        public HttpClient HttpClient { get; set; }
+        private readonly HttpClient _httpClient;
+
         public event Action<string>? StatusChanged;
         public event Action<double>? ProgressChanged;
-        public event Action<string>? ErrorOccurred;
 
-        public Downloader()
+        public FileDownloaderService(HttpClient httpClient)
         {
-            GitHubClient = new OctokitGitHubClient("GitHubReleaseDownloader");
-            HttpClient = new HttpClient();
+            _httpClient = httpClient;
         }
 
-        public async Task<IReadOnlyList<IReleaseAsset>> GetReleaseAssetsAsync(string repositoryUrl)
-        {
-            try
-            {
-                OnStatusChanged("Parsing repository URL...");
-                var (owner, repo) = ParseRepoUrl(repositoryUrl);
-
-                OnStatusChanged("Connecting to GitHub...");
-                var releases = await GitHubClient.Release.GetAll(owner, repo);
-                var latestRelease = releases.FirstOrDefault();
-
-                if (latestRelease == null)
-                {
-                    OnErrorOccurred("No releases found for this repository.");
-                    return new List<IReleaseAsset>();
-                }
-
-                return latestRelease.Assets;
-            }
-            catch (Exception ex)
-            {
-                OnErrorOccurred($"An unexpected error occurred: {ex.Message}");
-                return new List<IReleaseAsset>();
-            }
-        }
-
-        public async Task DownloadAndExtractRelease(IReleaseAsset asset, string destinationPath, CancellationToken cancellationToken = default)
+        public async Task DownloadAndExtractAsset(IReleaseAsset asset, string destinationPath, CancellationToken cancellationToken = default)
         {
             try
             {
                 OnStatusChanged($"Downloading {asset.Name}...");
-                using (var response = await HttpClient.GetAsync(asset.BrowserDownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
+                using (var response = await _httpClient.GetAsync(asset.BrowserDownloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken))
                 {
                     response.EnsureSuccessStatusCode();
 
@@ -62,7 +32,7 @@ namespace GitHubReleaseDownloader.Core
                     var zipPath = Path.Combine(Path.GetTempPath(), asset.Name);
 
                     using (var contentStream = await response.Content.ReadAsStreamAsync())
-                    using (var fileStream = new FileStream(zipPath, System.IO.FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
+                    using (var fileStream = new FileStream(zipPath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true))
                     {
                         var buffer = new byte[8192];
                         long totalBytesRead = 0;
@@ -98,13 +68,9 @@ namespace GitHubReleaseDownloader.Core
             {
                 OnStatusChanged("Download canceled.");
             }
-            catch (HttpRequestException ex)
-            {
-                OnErrorOccurred($"Error downloading the release asset: {ex.Message}");
-            }
             catch (Exception ex)
             {
-                OnErrorOccurred($"An unexpected error occurred: {ex.Message}");
+                throw new Exception($"An error occurred during download and extraction: {ex.Message}", ex);
             }
         }
 
@@ -116,22 +82,6 @@ namespace GitHubReleaseDownloader.Core
         private void OnProgressChanged(double progress)
         {
             ProgressChanged?.Invoke(progress);
-        }
-
-        private void OnErrorOccurred(string message)
-        {
-            ErrorOccurred?.Invoke(message);
-        }
-
-        public (string owner, string repo) ParseRepoUrl(string url)
-        {
-            var uri = new Uri(url);
-            var segments = uri.AbsolutePath.Trim('/').Split('/');
-            if (segments.Length < 2)
-            {
-                throw new ArgumentException("Invalid GitHub repository URL.");
-            }
-            return (segments[0], segments[1]);
         }
     }
 }
